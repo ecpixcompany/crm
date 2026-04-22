@@ -84,6 +84,7 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
           },
         },
         {
+          onError: (err) => console.error("🐼 ~ updateActividad error:", err),
           onSuccess: () => {
             setActivityData({ tipo: "llamada", descripcion: "", asesor: "" });
             setShowActivityForm(false);
