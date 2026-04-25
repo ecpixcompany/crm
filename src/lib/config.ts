@@ -2,6 +2,7 @@ export const config = {
   strapiEnabled: true,
   strapiBaseUrl: import.meta.env.VITE_STRAPI_BASE_URL || 'https://strapi.ecpixcompany.com',
   strapiApiPath: '/api',
+  n8nWebhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.ecpixcompany.com/webhook/send-text',
 endpoints: {
     leads: 'leads',
     asesores: 'asesors',
@@ -9,6 +10,7 @@ endpoints: {
     mensajes: 'mensajes',
     actividades: 'actividads',
     configuracion: 'configuracion-global',
+    configuracionAi: 'configuracion-ais',
   },
   leadWritableFields: [
     'nombres',

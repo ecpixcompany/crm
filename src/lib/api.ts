@@ -28,11 +28,44 @@ async function strapiFetch<T>(url: string, init?: RequestInit): Promise<T> {
     ,
   });
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.error('Strapi error:', res.status, body);
-    throw new Error(`Strapi ${res.status}: ${body || res.statusText}`);
+    const bodyText = await res.text().catch(() => '');
+    let bodyJson: Record<string, unknown> | null = null;
+    try { bodyJson = JSON.parse(bodyText); } catch { /* not JSON */ }
+    const detail = bodyJson
+      ? JSON.stringify(bodyJson)
+      : bodyText || res.statusText;
+    const method = init?.method || 'GET';
+    console.error(`Strapi error: ${method} ${url} → ${res.status}`, bodyJson ?? bodyText);
+    throw new Error(`Strapi ${res.status} ${url}: ${detail}`);
   }
   return res.json() as Promise<T>;
+}
+
+async function webhookFetch<T>(url: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => '');
+    throw new Error(`Webhook ${res.status}: ${bodyText || res.statusText}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function sendMessageViaN8N(input: {
+  phone: string;
+  message: string;
+  leadName?: string;
+  agentName?: string;
+}): Promise<unknown> {
+  return webhookFetch(config.n8nWebhookUrl, {
+    phone: input.phone,
+    message: input.message,
+    leadName: input.leadName,
+    agentName: input.agentName,
+  });
 }
 
 export interface Lead {
@@ -81,6 +114,7 @@ export interface Mensaje {
 
 export interface Conversacion {
   id: number;
+  documentId: string;
   canal: 'whatsapp' | 'email' | 'sms';
   ultimo_mensaje?: string;
   ultimo_mensaje_at?: string;
@@ -107,6 +141,18 @@ export interface ConfiguracionGlobal {
   id: number;
   slogan_principal: string;
   modo_demo: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConfiguracionAi {
+  id: number;
+  documentId: string;
+  lead?: { id: number; documentId: string } | null;
+  habilitado: boolean;
+  modelo: string;
+  prompt_custom?: string;
+  notas_ai?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -224,13 +270,13 @@ export async function deleteAsesor(id: number): Promise<void> {
 // ============ CONVERSACIONES ============
 
 export async function fetchConversaciones(): Promise<Conversacion[]> {
-  const url = `${getStrapiUrl('conversaciones')}?populate[lead][populate][asesor]=true&sort=ultimo_mensaje_at:desc`;
+  const url = `${endpointUrl('conversaciones')}?populate[lead][populate][asesor]=true&sort=ultimo_mensaje_at:desc`;
   const res = await strapiFetch<StrapiResponse<Conversacion[]>>(url);
   return flattenList(res.data);
 }
 
-export async function fetchConversacion(id: number): Promise<Conversacion> {
-  const url = `${getStrapiUrl('conversaciones', id)}?populate[lead][populate][asesor]=true&populate[mensajes]=true`;
+export async function fetchConversacion(documentId: string): Promise<Conversacion> {
+  const url = `${endpointUrl('conversaciones', documentId)}?populate[lead][populate][asesor]=true&populate[mensajes]=true`;
   const res = await strapiFetch<StrapiResponse<Conversacion>>(url);
   const conv = flatten(res.data);
   if (conv.mensajes) {
@@ -241,16 +287,16 @@ export async function fetchConversacion(id: number): Promise<Conversacion> {
   return conv;
 }
 
-export async function createConversacion(input: { lead: number; canal: Conversacion['canal'] }): Promise<Conversacion> {
-  const res = await strapiFetch<StrapiResponse<Conversacion>>(getStrapiUrl('conversaciones'), {
+export async function createConversacion(input: { leadDocumentId: string; canal: Conversacion['canal'] }): Promise<Conversacion> {
+  const res = await strapiFetch<StrapiResponse<Conversacion>>(endpointUrl('conversaciones'), {
     method: 'POST',
-    body: JSON.stringify({ data: input }),
+    body: JSON.stringify({ data: { lead: input.leadDocumentId, canal: input.canal } }),
   });
   return flatten(res.data);
 }
 
-export async function updateConversacion(id: number, input: Partial<Conversacion>): Promise<Conversacion> {
-  const res = await strapiFetch<StrapiResponse<Conversacion>>(getStrapiUrl('conversaciones', id), {
+export async function updateConversacion(documentId: string, input: Partial<Conversacion>): Promise<Conversacion> {
+  const res = await strapiFetch<StrapiResponse<Conversacion>>(endpointUrl('conversaciones', documentId), {
     method: 'PUT',
     body: JSON.stringify({ data: input }),
   });
@@ -259,24 +305,27 @@ export async function updateConversacion(id: number, input: Partial<Conversacion
 
 // ============ MENSAJES ============
 
-export async function fetchMensajesByConversacion(conversacionId: number): Promise<Mensaje[]> {
-  const url = `${getStrapiUrl('mensajes')}?filters[conversacion][id][$eq]=${conversacionId}&sort=timestamp:asc`;
+export async function fetchMensajesByConversacion(conversacionDocumentId: string): Promise<Mensaje[]> {
+  const url = `${endpointUrl('mensajes')}?filters[conversacion][documentId][$eq]=${conversacionDocumentId}&sort=timestamp:asc`;
   const res = await strapiFetch<StrapiResponse<Mensaje[]>>(url);
   return flattenList(res.data);
 }
 
 export async function createMensaje(input: {
-  conversacion: number;
+  conversacionDocumentId: string;
   contenido: string;
   tipo: Mensaje['tipo'];
   canal: Mensaje['canal'];
   timestamp?: string;
 }): Promise<Mensaje> {
   const data = {
-    ...input,
+    conversacion: input.conversacionDocumentId,
+    contenido: input.contenido,
+    tipo: input.tipo,
+    canal: input.canal,
     timestamp: input.timestamp || new Date().toISOString(),
   };
-  const res = await strapiFetch<StrapiResponse<Mensaje>>(getStrapiUrl('mensajes'), {
+  const res = await strapiFetch<StrapiResponse<Mensaje>>(endpointUrl('mensajes'), {
     method: 'POST',
     body: JSON.stringify({ data }),
   });
@@ -351,3 +400,48 @@ export const ESTADOS = ['nuevo', 'contactado', 'interesado', 'calificado', 'cerr
 export const FUENTES = ['web', 'referido', 'facebook', 'instagram', 'google'];
 export const PRIORIDADES = ['baja', 'media', 'alta'];
 export const TIPOS_ACCION = ['llamada', 'correo', 'reunion', 'visita'];
+export const MODELOS_AI = [
+  'Qwen/Qwen3.6-35B-A3B',
+  'google/gemma-4-31B-it',
+  'deepseek-ai/DeepSeek-V3.2',
+  'MiniMaxAI/MiniMax-M2.5'
+];
+
+// ============ CONFIGURACION AI ============
+
+export async function fetchConfiguracionAiByLead(leadDocumentId: string): Promise<ConfiguracionAi | null> {
+  const url = `${endpointUrl('configuracionAi')}?filters[lead][documentId][$eq]=${leadDocumentId}&populate=lead`;
+  const res = await strapiFetch<StrapiResponse<ConfiguracionAi[]>>(url);
+  if (!res.data || res.data.length === 0) return null;
+  return flatten(res.data[0]);
+}
+
+export async function createConfiguracionAi(input: {
+  leadDocumentId: string;
+  habilitado?: boolean;
+  modelo?: string;
+  prompt_custom?: string;
+  notas_ai?: string;
+}): Promise<ConfiguracionAi> {
+  const data: Record<string, unknown> = { lead: input.leadDocumentId };
+  if (input.habilitado !== undefined) data.habilitado = input.habilitado;
+  if (input.modelo !== undefined) data.modelo = input.modelo;
+  if (input.prompt_custom !== undefined) data.prompt_custom = input.prompt_custom;
+  if (input.notas_ai !== undefined) data.notas_ai = input.notas_ai;
+  const res = await strapiFetch<StrapiResponse<ConfiguracionAi>>(endpointUrl('configuracionAi'), {
+    method: 'POST',
+    body: JSON.stringify({ data }),
+  });
+  return flatten(res.data);
+}
+
+export async function updateConfiguracionAi(
+  documentId: string,
+  input: Partial<Omit<ConfiguracionAi, 'id' | 'documentId' | 'lead' | 'createdAt' | 'updatedAt'>>
+): Promise<ConfiguracionAi> {
+  const res = await strapiFetch<StrapiResponse<ConfiguracionAi>>(endpointUrl('configuracionAi', documentId), {
+    method: 'PUT',
+    body: JSON.stringify({ data: input }),
+  });
+  return flatten(res.data);
+}

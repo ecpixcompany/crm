@@ -10,7 +10,7 @@
 
 ## Resumen
 
-- **Collection Types (5):** Lead, Asesor, Conversacion, Mensaje, Actividad
+- **Collection Types (6):** Lead, Asesor, Conversacion, Mensaje, Actividad, ConfiguracionAi
 - **Single Types (1):** ConfiguracionGlobal
 - **Components:** ninguno
 
@@ -32,7 +32,7 @@
 | correo | Email | |
 | ciudad | Text (short) | |
 | estado | Enumeration | nuevo, contactado, interesado, calificado, cerrado (default: nuevo) |
-| fuente | Enumeration | web, referido, facebook, instagram, google |
+| fuente | Enumeration | web, referido, facebook, instagram, google, whatsapp |
 | prioridad | Enumeration | baja, media, alta (default: media) |
 | fecha_ultimo_contacto | Date | |
 | fecha_proxima_accion | Date | |
@@ -130,14 +130,46 @@ Alimenta la trazabilidad/timeline del lead (LeadDetailModal > `lead-timeline`).
 
 ---
 
+### 6. ConfiguracionAi (Collection Type)
+
+Configuracion individual de AI por lead. Cada lead puede tener 0 o 1 config; si no existe se usan los defaults globales.
+
+**Campos:**
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| lead | Relation (Lead) | Many-to-One — Unique (cada lead tiene max 1 config) |
+| habilitado | Boolean | Default: true. Activa respuestas AI para este lead |
+| modelo | Text | ej: "gpt-4o", "claude-3-opus", "gemini-pro" |
+| prompt_custom | Text (long) | Instrucciones específicas para este lead |
+| notas_ai | Text (long) | Notas privadas del asesor sobre el AI |
+
+**Configuracion:**
+- UID: `configuracion_ai`
+- draftAndPublish: false
+
+**Relacion:**
+```
+Lead (1) ←→ (0..1) ConfiguracionAi
+ConfiguracionAi (N) → (1) Lead
+```
+
+**Fallback:** Si un lead no tiene `ConfiguracionAi`, se usan los valores de `ConfiguracionGlobal`.
+
+---
+
 ## Single Types
 
-### ConfiguracionGlobal
+### ConfiguracionGlobal (Single Type)
 
 | Campo | Tipo | Notas |
 |-------|------|-------|
 | slogan_principal | Text | Default: "CRM UNIMETA" |
 | modo_demo | Boolean | Default: true. Controla chips "Modo demo" en UI |
+| ai_modelo_default | Text | Default: "gpt-4o". Modelo usado si lead no tiene ConfiguracionAi |
+| ai_prompt_default | Text (long) | Prompt default para AI Agent |
+| ai_tiempo_max_minutos | Integer | Default: 30. Minutos antes de escalar a asesor humano |
+| ai_habilitado_global | Boolean | Default: false. Activa/desactiva AI globalmente |
 
 ---
 
@@ -149,6 +181,7 @@ Lead (1) ←→ (N) Conversacion
 Lead (1) ←→ (N) Actividad
 Conversacion (1) ←→ (N) Mensaje
 Asesor (1) ←→ (N) Actividad   (opcional, autor)
+Lead (1) ←→ (0..1) ConfiguracionAi
 ```
 
 ---
@@ -165,21 +198,33 @@ Asesor (1) ←→ (N) Actividad   (opcional, autor)
 
 ### Conversacion
 - [x] `find`, `findOne`, `create`, `update`
+- [ ] `delete`
+
+**Notas sobre relaciones en Strapi v5:**
+- `createConversacion` recibe `leadDocumentId` (string, documentId del lead) — NO id numérico.
+- `updateConversacion` y `fetchConversacion` operan por `documentId` (string), no por `id` numérico.
+- `createMensaje` recibe `conversacionDocumentId` (string).
+- Filtros de mensajes usan `conversacion.documentId` en lugar de `conversacion.id`.
 
 ### Mensaje
 - [x] `find`, `create`
 
 ### Actividad
-- [x] `find`, `create`
+- [x] `find`, `findOne`, `create`, `update`, `delete`
 
 ### ConfiguracionGlobal
 - [x] `find`
+- [ ] `update` — para cambiar configs AI globals desde UI
+
+### ConfiguracionAi
+- [x] `find`, `findOne`, `create`, `update`
+- [ ] `delete`
 
 ---
 
 ## Pasos para configurar en Strapi
 
-1. **Crear Asesor** — Collection Type. Poblar con los 4 asesores actuales (Carlos M., Ana L., Juan P., Maria G.).
+1. **Crear Asesor** — Collection Type. Poblar con los asesores: Carlos M., Ana L., Juan P., Maria G. y **Chatbot** (asesor por defecto para leads que llegan via WhatsApp/Evolution API).
 2. **Crear Lead** — Collection Type con los campos indicados, incluyendo relacion `asesor → Asesor`.
 3. **Crear Conversacion** — Collection Type, relacion con Lead.
 4. **Crear Mensaje** — Collection Type, relacion con Conversacion.
@@ -188,6 +233,8 @@ Asesor (1) ←→ (N) Actividad   (opcional, autor)
 7. **Configurar permisos** — Settings > Roles > Public o Authenticated, habilitar endpoints necesarios.
 8. **Verificar Strapi** — corriendo en `http://localhost:1337`.
 9. **Actualizar frontend** — `src/lib/config.ts` ya tiene `strapiEnabled: true`. Cuando Asesor este activo, reemplazar `ASESORES` hardcoded en `src/lib/api.ts` por un fetch real.
+
+> **IMPORTANTE:** En Settings > Users & Permissions > Roles > [Public o Authenticated], habilitar `update` y `delete` en Actividad (y en Lead, Conversacion) para que las mutaciones del frontend funcionen. Sin esto Strapi v5 responde 404 en vez de 403.
 
 ---
 
@@ -199,7 +246,7 @@ Strapi y el frontend deben usar los mismos valores exactos para evitar transform
 // src/lib/api.ts
 export const PROGRAMAS = ['Ingenieria', 'Medicina', 'Derecho', 'Administracion', 'Psicologia', 'Comunicacion']; // capitalizadas
 export const ESTADOS = ['nuevo', 'contactado', 'interesado', 'calificado', 'cerrado'];                        // minusculas
-export const FUENTES = ['web', 'referido', 'facebook', 'instagram', 'google'];                                // minusculas
+export const FUENTES = ['web', 'referido', 'facebook', 'instagram', 'google', 'whatsapp'];                                // minusculas
 export const PRIORIDADES = ['baja', 'media', 'alta'];                                                         // minusculas
 export const TIPOS_ACCION = ['llamada', 'correo', 'reunion', 'visita'];                                       // minusculas
 ```
@@ -217,3 +264,90 @@ Los Components de Strapi sirven para estructuras reutilizables entre Content Typ
 - Añadir components introduciria un nivel de anidamiento que complica queries (`populate=contacto,accion...`) sin beneficio real.
 
 Si a futuro se agregan entidades como `Prospecto` o `Estudiante` que compartan datos de contacto, ahi si conviene extraer un component `datos-contacto`.
+
+---
+
+## Respuestas Automatizadas via AI (n8n + Evolution API)
+
+### Arquitectura del flujo
+
+```
+[WhatsApp] → [Evolution API] → [n8n Webhook] → [Strapi: guardar mensaje entrada]
+                                        ↓
+                              [n8n: AI Agent procesa mensaje]
+                                        ↓
+                              [Strapi: guardar mensaje salida]
+                                        ↓
+                              [Evolution API: enviar respuesta WhatsApp]
+```
+
+### Configuracion en n8n
+
+El workflow de n8n recibe webhook de Evolution API con el mensaje entrante:
+
+```
+POST /webhook/whatsapp-incoming
+{
+  "phone": "573004256663",
+  "text": "hola, informacion sobre ingenieria",
+  "timestamp": "2026-04-23T12:00:00.000Z"
+}
+```
+
+**Pasos del workflow:**
+
+1. **Recibir webhook** de Evolution API
+2. **Buscar lead en Strapi** por celular:
+   ```
+   GET /api/leads?filters[celular][$eq]=573004256663&populate[conversacion]=true
+   ```
+3. **Si no existe el lead**, crearlo con estado `nuevo`, fuente `whatsapp`, asignar al asesor `Chatbot`
+4. **Si no existe conversacion**, crearla vinculada al lead:
+   ```
+   POST /api/conversaciones
+   { "data": { "lead": "documentId_del_lead", "canal": "whatsapp", "sin_respuesta": true } }
+   ```
+5. **Guardar mensaje de entrada** en Strapi:
+   ```
+   POST /api/mensajes
+   { "data": { "conversacion": "documentId_conversacion", "contenido": "hola...", "tipo": "entrada", "canal": "whatsapp", "timestamp": "..." } }
+   ```
+6. **Actualizar conversacion** (marcar `sin_respuesta: false`, actualizar `ultimo_mensaje` y `ultimo_mensaje_at`)
+7. **Enviar a AI Agent** (n8n AI Agent node) con contexto del lead y conversacion
+8. **Recibir respuesta del AI Agent**
+9. **Guardar respuesta como mensaje salida** en Strapi:
+   ```
+   POST /api/mensajes
+   { "data": { "conversacion": "documentId_conversacion", "contenido": "respuesta IA", "tipo": "salida", "canal": "whatsapp", "timestamp": "..." } }
+   ```
+10. **Enviar via Evolution API** al numero de WhatsApp:
+    ```
+    POST /message/sendText/{instanceName}
+    { "number": "573004256663", "text": "respuesta IA" }
+    ```
+
+### Campos adicionales en ConfiguracionGlobal (opcional)
+
+Para controlar el comportamiento del AI Agent:
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `ai_agent_enabled` | Boolean | Default: false. Activa respuestas automaticas |
+| `ai_agent_prompt` | Text (long) | System prompt para el AI Agent |
+| `ai_agent_model` | Text | Modelo a usar: gpt-4o, claude-3-opus, etc. |
+| `ai_tiempo_respuesta_max` | Integer | Minutos maximos antes de escalar a asesor humano |
+
+### Notas sobre escalamiento
+
+- Si `ai_agent_enabled: false`, el mensaje se guarda pero NO se envia a AI Agent
+- Si el lead tiene `asesor` asignado (no `Chatbot`), se puede escalar automaticamente si la respuesta del AI Agent lo indica
+- Para escalar a asesor humano: crear actividad tipo `nota` con `descripcion: "Lead necesita atencion humana"` y notificar al asesor asignado
+
+### Permisos API necesarios para n8n
+
+El workflow de n8n necesita permisos de API en Strapi:
+
+- **Lead:** `find`, `create`, `update`
+- **Conversacion:** `find`, `create`, `update`
+- **Mensaje:** `find`, `create`
+- **Asesor:** `find` (para buscar el asesor Chatbot por nombre)

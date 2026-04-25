@@ -15,11 +15,11 @@ export function useConversaciones(pollInterval?: number | false) {
   });
 }
 
-export function useConversacion(id: number | undefined, pollInterval?: number | false) {
+export function useConversacion(documentId: string | undefined, pollInterval?: number | false) {
   return useQuery({
-    queryKey: ['conversaciones', id],
-    queryFn: () => fetchConversacion(id!),
-    enabled: id !== undefined,
+    queryKey: ['conversaciones', documentId],
+    queryFn: () => fetchConversacion(documentId!),
+    enabled: documentId !== undefined,
     refetchInterval: pollInterval,
   });
 }
@@ -35,10 +35,10 @@ export function useCreateConversacion() {
 export function useUpdateConversacion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Conversacion> }) => updateConversacion(id, data),
+    mutationFn: ({ documentId, data }: { documentId: string; data: Partial<Conversacion> }) => updateConversacion(documentId, data),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['conversaciones'] });
-      qc.invalidateQueries({ queryKey: ['conversaciones', vars.id] });
+      qc.invalidateQueries({ queryKey: ['conversaciones', vars.documentId] });
     },
   });
 }

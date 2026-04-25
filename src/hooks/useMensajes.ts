@@ -6,11 +6,13 @@ import {
   type Mensaje,
 } from '../lib/api';
 
-export function useMensajes(conversacionId: number | undefined) {
+export function useMensajes(conversacionDocumentId: string | undefined, refetchIntervalMs?: number | false) {
   return useQuery({
-    queryKey: ['mensajes', { conversacionId }],
-    queryFn: () => fetchMensajesByConversacion(conversacionId!),
-    enabled: conversacionId !== undefined,
+    queryKey: ['mensajes', conversacionDocumentId],
+    queryFn: () => fetchMensajesByConversacion(conversacionDocumentId!),
+    enabled: conversacionDocumentId !== undefined,
+    refetchInterval: refetchIntervalMs ?? false,
+    staleTime: 2000,
   });
 }
 
@@ -18,23 +20,23 @@ export function useCreateMensaje() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      conversacion: number;
+      conversacionDocumentId: string;
       contenido: string;
       tipo: Mensaje['tipo'];
       canal: Mensaje['canal'];
       timestamp?: string;
     }) => {
-      const mensaje = await createMensaje(input);
-      await updateConversacion(input.conversacion, {
+      const mensaje = await createMensaje({ conversacionDocumentId: input.conversacionDocumentId, contenido: input.contenido, tipo: input.tipo, canal: input.canal, timestamp: input.timestamp });
+      await updateConversacion(input.conversacionDocumentId, {
         ultimo_mensaje: input.contenido,
         ultimo_mensaje_at: input.timestamp || new Date().toISOString(),
+        sin_respuesta: false,
       });
       return mensaje;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['conversaciones'] });
-      qc.invalidateQueries({ queryKey: ['conversaciones', vars.conversacion] });
-      qc.invalidateQueries({ queryKey: ['mensajes', { conversacionId: vars.conversacion }] });
+      qc.invalidateQueries({ queryKey: ['mensajes', vars.conversacionDocumentId] });
     },
   });
 }

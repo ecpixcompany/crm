@@ -113,7 +113,9 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
 
   const handleDeleteActivity = (documentId: string) => {
     if (confirm("¿Eliminar esta actividad?")) {
-      deleteActividad.mutate(documentId);
+      deleteActividad.mutate(documentId, {
+        onError: (err) => console.error("🐼 ~ deleteActividad error:", err),
+      });
     }
   };
 
