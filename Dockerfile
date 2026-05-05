@@ -30,6 +30,8 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+RUN echo 'export default { preview: { allowedHosts: true } }' > vite.config.js
+
 EXPOSE 4173
 
 CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
