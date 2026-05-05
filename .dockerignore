@@ -1,0 +1,13 @@
+# Ignorar todo por defecto (sobrescribe cualquier .dockerignore global de Dokploy)
+*
+
+# Permitir solo lo necesario para el build
+!package.json
+!package-lock.json
+!src
+!public
+!index.html
+!tsconfig.json
+!vite.config.ts
+!tsconfig.node.json
+!vite.config.node.ts
