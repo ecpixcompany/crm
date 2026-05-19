@@ -25,7 +25,7 @@ export function useCreateAsesor() {
 export function useUpdateAsesor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Asesor> }) => updateAsesor(id, data),
+    mutationFn: ({ documentId, data }: { documentId: string; data: Partial<Asesor> }) => updateAsesor(documentId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['asesores'] }),
   });
 }
@@ -33,7 +33,7 @@ export function useUpdateAsesor() {
 export function useDeleteAsesor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: deleteAsesor,
+    mutationFn: (documentId: string) => deleteAsesor(documentId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['asesores'] });
       qc.invalidateQueries({ queryKey: ['leads'] });

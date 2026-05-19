@@ -94,6 +94,7 @@ export interface Lead {
 
 export interface Asesor {
   id: number;
+  documentId: string;
   nombre: string;
   correo?: string;
   activo: boolean;
@@ -178,7 +179,7 @@ export async function fetchLeads(): Promise<Lead[]> {
 }
 
 export async function fetchLead(documentId: string): Promise<Lead> {
-  const url = `${getStrapiUrl('leads', documentId)}?populate[asesor]=true&populate[conversacions]=true&populate[actividads]=true`;
+  const url = `${getStrapiUrl('leads', documentId)}?populate[asesor]=true&populate[conversaciones]=true&populate[actividades]=true`;
   const res = await strapiFetch<StrapiResponse<Lead>>(url);
   if (!res.data) throw new Error('Lead no encontrado');
   return flatten(res.data);
@@ -227,7 +228,6 @@ export async function updateLead(documentId: string, input: Partial<Lead>): Prom
     }
   }
 
-  console.log("🐼 ~ data:", data);
   const res = await strapiFetch<StrapiResponse<Lead>>(getStrapiUrl('leads', documentId), {
     method: 'PUT',
     body: JSON.stringify({ data }),
@@ -247,24 +247,24 @@ export async function fetchAsesores(): Promise<Asesor[]> {
   return flattenList(res.data);
 }
 
-export async function createAsesor(input: Omit<Asesor, 'id' | 'createdAt' | 'updatedAt'>): Promise<Asesor> {
-  const res = await strapiFetch<StrapiResponse<Asesor>>(getStrapiUrl('asesores'), {
+export async function createAsesor(input: Omit<Asesor, 'id' | 'documentId' | 'createdAt' | 'updatedAt'>): Promise<Asesor> {
+  const res = await strapiFetch<StrapiResponse<Asesor>>(endpointUrl('asesores'), {
     method: 'POST',
     body: JSON.stringify({ data: input }),
   });
   return flatten(res.data);
 }
 
-export async function updateAsesor(id: number, input: Partial<Asesor>): Promise<Asesor> {
-  const res = await strapiFetch<StrapiResponse<Asesor>>(getStrapiUrl('asesores', id), {
+export async function updateAsesor(documentId: string, input: Partial<Asesor>): Promise<Asesor> {
+  const res = await strapiFetch<StrapiResponse<Asesor>>(endpointUrl('asesores', documentId), {
     method: 'PUT',
     body: JSON.stringify({ data: input }),
   });
   return flatten(res.data);
 }
 
-export async function deleteAsesor(id: number): Promise<void> {
-  await strapiFetch(getStrapiUrl('asesores', id), { method: 'DELETE' });
+export async function deleteAsesor(documentId: string): Promise<void> {
+  await strapiFetch(endpointUrl('asesores', documentId), { method: 'DELETE' });
 }
 
 // ============ CONVERSACIONES ============

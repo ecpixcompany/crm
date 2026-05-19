@@ -38,7 +38,7 @@ export function ConfiguracionPage() {
 
     if (editingAsesor) {
       updateAsesor.mutate(
-        { id: editingAsesor.id, data: { nombre: asesorForm.nombre, correo: asesorForm.correo || undefined, activo: asesorForm.activo } },
+        { documentId: editingAsesor.documentId, data: { nombre: asesorForm.nombre, correo: asesorForm.correo || undefined, activo: asesorForm.activo } },
         { onSuccess: () => { setShowAsesorModal(false); setEditingAsesor(null); } }
       );
     } else {
@@ -49,14 +49,14 @@ export function ConfiguracionPage() {
     }
   };
 
-  const handleDeleteAsesor = (id: number) => {
+  const handleDeleteAsesor = (documentId: string) => {
     if (confirm('¿Estás seguro de eliminar este asesor?')) {
-      deleteAsesor.mutate(id);
+      deleteAsesor.mutate(documentId);
     }
   };
 
   const handleToggleActivo = (asesor: Asesor) => {
-    updateAsesor.mutate({ id: asesor.id, data: { activo: !asesor.activo } });
+    updateAsesor.mutate({ documentId: asesor.documentId, data: { activo: !asesor.activo } });
   };
 
   const handleSaveConfig = () => {
@@ -122,7 +122,7 @@ export function ConfiguracionPage() {
                             <button className="btn btn-icon" onClick={() => handleOpenAsesorModal(asesor)} title="Editar">
                               <i className="fas fa-pencil-alt"></i>
                             </button>
-                            <button className="btn btn-icon btn-danger" onClick={() => handleDeleteAsesor(asesor.id)} title="Eliminar">
+                            <button className="btn btn-icon btn-danger" onClick={() => handleDeleteAsesor(asesor.documentId)} title="Eliminar">
                               <i className="fas fa-trash"></i>
                             </button>
                           </div>

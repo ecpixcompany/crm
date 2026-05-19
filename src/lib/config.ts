@@ -1,6 +1,6 @@
 export const config = {
   strapiEnabled: true,
-  strapiBaseUrl: import.meta.env.VITE_STRAPI_BASE_URL || 'https://strapi.ecpixcompany.com',
+  strapiBaseUrl: import.meta.env.VITE_STRAPI_BASE_URL ?? '',
   strapiApiPath: '/api',
   n8nWebhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.ecpixcompany.com/webhook/send-text',
 endpoints: {
