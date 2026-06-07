@@ -1,16 +1,39 @@
 import { useState } from 'react';
-import { useAsesores, useCreateAsesor, useUpdateAsesor, useDeleteAsesor } from '../hooks/useAsesores';
-import { useConfiguracion, useUpdateConfiguracion } from '../hooks/useConfiguracion';
-import type { Asesor } from '../lib/api';
-import './ConfiguracionPage.css';
+import {
+  Plus,
+  Save,
+  Check,
+  Pencil,
+  Trash2,
+  Settings as SettingsIcon,
+  Users as UsersIcon,
+  CheckCircle2,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { useAsesores, useCreateAsesor, useUpdateAsesor, useDeleteAsesor } from '@/hooks/useAsesores';
+import { useConfiguracion, useUpdateConfiguracion } from '@/hooks/useConfiguracion';
+import type { Asesor } from '@/lib/api';
 
 export function ConfiguracionPage() {
   const { data: asesores = [], isLoading: asesoresLoading } = useAsesores();
-  const { data: config } = useConfiguracion();
   const createAsesor = useCreateAsesor();
   const updateAsesor = useUpdateAsesor();
   const deleteAsesor = useDeleteAsesor();
   const updateConfig = useUpdateConfiguracion();
+
+  const { data: config } = useConfiguracion();
 
   const [showAsesorModal, setShowAsesorModal] = useState(false);
   const [editingAsesor, setEditingAsesor] = useState<Asesor | null>(null);
@@ -38,7 +61,14 @@ export function ConfiguracionPage() {
 
     if (editingAsesor) {
       updateAsesor.mutate(
-        { documentId: editingAsesor.documentId, data: { nombre: asesorForm.nombre, correo: asesorForm.correo || undefined, activo: asesorForm.activo } },
+        {
+          documentId: editingAsesor.documentId,
+          data: {
+            nombre: asesorForm.nombre,
+            correo: asesorForm.correo || undefined,
+            activo: asesorForm.activo,
+          },
+        },
         { onSuccess: () => { setShowAsesorModal(false); setEditingAsesor(null); } }
       );
     } else {
@@ -69,159 +99,206 @@ export function ConfiguracionPage() {
   };
 
   return (
-    <div>
-      <section className="page-intro-card">
-        <div>
-          <h2>Configuración</h2>
-          <p>Administra asesores y configuración global del CRM.</p>
-        </div>
-      </section>
-
-      <div className="config-layout">
-        <section className="config-section">
-          <div className="section-header-row">
-            <h2>Asesores</h2>
-            <button className="btn btn-primary" onClick={() => handleOpenAsesorModal()}>
-              <i className="fas fa-plus"></i> Agregar asesor
-            </button>
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="flex justify-between items-center py-5">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Configuración del CRM</h2>
+            <p className="text-sm text-muted-foreground">
+              Administra asesores y configuración global del CRM.
+            </p>
           </div>
+          <Badge className="bg-unimeta-red text-white">Ajustes</Badge>
+        </CardContent>
+      </Card>
 
-          {asesoresLoading ? (
-            <p className="loading-text">Cargando...</p>
-          ) : (
-            <div className="table-responsive">
-              <table className="config-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Correo</th>
-                    <th>Activo</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {asesores.length === 0 ? (
-                    <tr><td colSpan={4} className="empty-cell">No hay asesores registrados</td></tr>
-                  ) : (
-                    asesores.map((asesor) => (
-                      <tr key={asesor.id}>
-                        <td>{asesor.nombre}</td>
-                        <td>{asesor.correo || '-'}</td>
-                        <td>
-                          <label className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={asesor.activo}
-                              onChange={() => handleToggleActivo(asesor)}
-                            />
-                            <span className="toggle-slider"></span>
-                          </label>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="btn btn-icon" onClick={() => handleOpenAsesorModal(asesor)} title="Editar">
-                              <i className="fas fa-pencil-alt"></i>
-                            </button>
-                            <button className="btn btn-icon btn-danger" onClick={() => handleDeleteAsesor(asesor.documentId)} title="Eliminar">
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UsersIcon className="h-4 w-4 text-unimeta-red" /> Asesores
+              </CardTitle>
+              <Button
+                size="sm"
+                onClick={() => handleOpenAsesorModal()}
+                className="bg-unimeta-red hover:bg-unimeta-red-dark"
+              >
+                <Plus className="h-4 w-4" /> Agregar asesor
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {asesoresLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
+            ) : (
+              <div className="overflow-x-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-muted-foreground text-left">
+                    <tr>
+                      <th className="py-3 px-3 font-medium">Nombre</th>
+                      <th className="py-3 px-3 font-medium">Correo</th>
+                      <th className="py-3 px-3 font-medium">Activo</th>
+                      <th className="py-3 px-3 font-medium text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {asesores.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-6 text-muted-foreground">
+                          No hay asesores registrados
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+                    ) : (
+                      asesores.map((asesor) => (
+                        <tr key={asesor.id} className="border-t border-border">
+                          <td className="py-3 px-3 font-medium">{asesor.nombre}</td>
+                          <td className="py-3 px-3">{asesor.correo || '-'}</td>
+                          <td className="py-3 px-3">
+                            <label className="inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={asesor.activo}
+                                onChange={() => handleToggleActivo(asesor)}
+                                className="sr-only peer"
+                              />
+                              <span className="w-9 h-5 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                            </label>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="inline-flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleOpenAsesorModal(asesor)}
+                                title="Editar"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleDeleteAsesor(asesor.documentId)}
+                                className="text-destructive hover:text-destructive"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <section className="config-section">
-          <h2>Configuración global</h2>
-          <div className="config-form">
-            <div className="form-group">
-              <label className="form-label">Slogan principal</label>
-              <input
-                type="text"
-                className="form-input"
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <SettingsIcon className="h-4 w-4 text-unimeta-red" /> Configuración global
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Slogan principal</Label>
+              <Input
                 value={configForm.slogan_principal}
                 onChange={(e) => setConfigForm({ ...configForm, slogan_principal: e.target.value })}
               />
             </div>
-            <div className="form-group">
-              <label className="toggle-label">
-                <span>Modo demo</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={configForm.modo_demo}
-                    onChange={(e) => setConfigForm({ ...configForm, modo_demo: e.target.checked })}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label>Modo demo</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cuando está activo, muestra el chip "Modo demo" en las páginas.
+                </p>
+              </div>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={configForm.modo_demo}
+                  onChange={(e) => setConfigForm({ ...configForm, modo_demo: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <span className="w-11 h-6 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
               </label>
-              <p className="form-hint">Cuando está activo, muestra el chip "Modo demo" en las páginas.</p>
             </div>
-            <div className="form-actions">
-              <button className="btn btn-primary" onClick={handleSaveConfig} disabled={updateConfig.isPending}>
-                {saveSuccess ? <><i className="fas fa-check"></i> Guardado ✓</> : updateConfig.isPending ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </section>
+            <Button
+              onClick={handleSaveConfig}
+              disabled={updateConfig.isPending}
+              className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+            >
+              {saveSuccess ? (
+                <>
+                  <Check className="h-4 w-4" /> Guardado
+                </>
+              ) : updateConfig.isPending ? (
+                'Guardando...'
+              ) : (
+                <>
+                  <Save className="h-4 w-4" /> Guardar
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {showAsesorModal && (
-        <div className="modal-overlay" onClick={() => setShowAsesorModal(false)}>
-          <div className="modal-content modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingAsesor ? 'Editar asesor' : 'Nuevo asesor'}</h2>
-              <button className="modal-close" onClick={() => setShowAsesorModal(false)}><i className="fas fa-times"></i></button>
+      <Dialog open={showAsesorModal} onOpenChange={(o) => !o && setShowAsesorModal(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingAsesor ? 'Editar asesor' : 'Nuevo asesor'}</DialogTitle>
+            <DialogClose />
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Nombre *</Label>
+              <Input
+                value={asesorForm.nombre}
+                onChange={(e) => setAsesorForm({ ...asesorForm, nombre: e.target.value })}
+                placeholder="Nombre del asesor"
+              />
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Nombre *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={asesorForm.nombre}
-                  onChange={(e) => setAsesorForm({ ...asesorForm, nombre: e.target.value })}
-                  placeholder="Nombre del asesor"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Correo</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={asesorForm.correo}
-                  onChange={(e) => setAsesorForm({ ...asesorForm, correo: e.target.value })}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-              <div className="form-group">
-                <label className="toggle-label">
-                  <span>Activo</span>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={asesorForm.activo}
-                      onChange={(e) => setAsesorForm({ ...asesorForm, activo: e.target.checked })}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                </label>
-              </div>
+            <div className="space-y-1.5">
+              <Label>Correo</Label>
+              <Input
+                type="email"
+                value={asesorForm.correo}
+                onChange={(e) => setAsesorForm({ ...asesorForm, correo: e.target.value })}
+                placeholder="correo@ejemplo.com"
+              />
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={handleSaveAsesor} disabled={!asesorForm.nombre.trim() || createAsesor.isPending || updateAsesor.isPending}>
-                {createAsesor.isPending || updateAsesor.isPending ? 'Guardando...' : 'Guardar'}
-              </button>
-              <button className="btn btn-secondary" onClick={() => setShowAsesorModal(false)}>Cancelar</button>
+            <div className="flex items-center justify-between py-2">
+              <Label>Activo</Label>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={asesorForm.activo}
+                  onChange={(e) => setAsesorForm({ ...asesorForm, activo: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <span className="w-11 h-6 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+              </label>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAsesorModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveAsesor}
+              disabled={!asesorForm.nombre.trim() || createAsesor.isPending || updateAsesor.isPending}
+              className="bg-unimeta-red hover:bg-unimeta-red-dark"
+            >
+              {createAsesor.isPending || updateAsesor.isPending ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

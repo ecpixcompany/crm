@@ -1,6 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchLeads } from '../lib/api';
-import { useConfiguracion } from '../hooks/useConfiguracion';
+import type { ReactNode } from 'react';
+import { Users, UserCheck, Target, TrendingUp, Bell, BarChart3, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { fetchLeads } from '@/lib/api';
+import { useConfiguracion } from '@/hooks/useConfiguracion';
+
+interface KpiCardProps {
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+  subtitle?: string;
+  variant?: 'default' | 'destructive';
+}
+
+function KpiCard({ title, value, icon, subtitle, variant }: KpiCardProps) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-sm text-muted-foreground">{title}</span>
+          <div className={variant === 'destructive' ? 'text-destructive' : 'text-unimeta-red'}>
+            {icon}
+          </div>
+        </div>
+        <div className="text-3xl font-bold mb-1">{value}</div>
+        {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DashboardPage() {
   const { data: leads, isLoading, error } = useQuery({
@@ -15,104 +44,124 @@ export function DashboardPage() {
   const conversionRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
 
   return (
-    <div>
-      <section className="page-intro-card">
-        <div>
-          <h2>Operacion comercial preparada para Strapi</h2>
-          <p>El dashboard consume la misma capa de datos que luego podras alimentar desde Strapi sin rehacer las vistas.</p>
-        </div>
-        <div className="intro-chip-group">
-          {config?.modo_demo && <span className="intro-chip" id="dataModeChip">Modo demo</span>}
-          <span className="intro-chip">UNIMETA</span>
-        </div>
-      </section>
-
-      <div className="kpi-container">
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Leads totales</span>
-            <span className="kpi-icon"><i className="fas fa-users"></i></span>
-          </div>
-          <div className="kpi-value">{isLoading ? '...' : totalLeads}</div>
-          <div className="kpi-change">Base comercial consolidada</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Leads activos</span>
-            <span className="kpi-icon"><i className="fas fa-user-clock"></i></span>
-          </div>
-          <div className="kpi-value">{isLoading ? '...' : activeLeads}</div>
-          <div className="kpi-change">Sin estados cerrados</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Calificados</span>
-            <span className="kpi-icon"><i className="fas fa-check-double"></i></span>
-          </div>
-          <div className="kpi-value">{isLoading ? '...' : qualifiedLeads}</div>
-          <div className="kpi-change">Listos para cierre</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Conversion</span>
-            <span className="kpi-icon"><i className="fas fa-chart-line"></i></span>
-          </div>
-          <div className="kpi-value">{isLoading ? '...' : `${conversionRate}%`}</div>
-          <div className="kpi-change">Matriculados sobre total</div>
-        </div>
-      </div>
-
-      <div className="dashboard-grid">
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Embudo por estado</h2>
-              <p className="section-subtitle">Resumen dinamico del pipeline comercial.</p>
-            </div>
-          </div>
-          <div id="dashboardFunnel" className="funnel-list">
-            {error && <p className="error-message">Error cargando datos</p>}
-          </div>
-        </section>
-
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Alertas operativas</h2>
-              <p className="section-subtitle">Seguimientos vencidos y conversaciones pendientes.</p>
-            </div>
-          </div>
-          <div id="dashboardAlerts" className="alert-list"></div>
-        </section>
-      </div>
-
-      <section className="table-section">
-        <div className="section-header">
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="flex justify-between items-center py-5">
           <div>
-            <h2 className="section-title">Actividad comercial reciente</h2>
-            <p className="section-subtitle">Cada fila abre la hoja de vida del lead.</p>
+            <h2 className="text-lg font-semibold mb-1">Operación comercial conectada a Strapi</h2>
+            <p className="text-sm text-muted-foreground">
+              El dashboard consume la misma capa de datos que luego podrás alimentar desde Strapi.
+            </p>
           </div>
-        </div>
-        <div className="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Lead</th>
-                <th>Programa</th>
-                <th>Asesor</th>
-                <th>Estado</th>
-                <th>Proxima accion</th>
-              </tr>
-            </thead>
-            <tbody id="dashboardRecentTableBody">
-              {isLoading && <tr><td colSpan={5}>Cargando...</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <div className="flex gap-2">
+            {config?.modo_demo && (
+              <Badge variant="outline" className="border-unimeta-red text-unimeta-red">
+                Modo demo
+              </Badge>
+            )}
+            <Badge className="bg-unimeta-red text-white">UNIMETA</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          title="Leads totales"
+          value={isLoading ? '...' : totalLeads}
+          icon={<Users className="h-5 w-5" />}
+          subtitle="Base comercial consolidada"
+        />
+        <KpiCard
+          title="Leads activos"
+          value={isLoading ? '...' : activeLeads}
+          icon={<UserCheck className="h-5 w-5" />}
+          subtitle="Sin estados cerrados"
+        />
+        <KpiCard
+          title="Calificados"
+          value={isLoading ? '...' : qualifiedLeads}
+          icon={<Target className="h-5 w-5" />}
+          subtitle="Listos para cierre"
+        />
+        <KpiCard
+          title="Conversión"
+          value={isLoading ? '...' : `${conversionRate}%`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          subtitle="Calificados sobre total"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-4 w-4 text-unimeta-red" />
+              Embudo por estado
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Resumen dinámico del pipeline comercial.</p>
+          </CardHeader>
+          <CardContent>
+            {error ? (
+              <p className="text-destructive text-center py-5">Error cargando datos</p>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">
+                Visualización en desarrollo
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell className="h-4 w-4 text-unimeta-red" />
+              Alertas operativas
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Seguimientos vencidos y conversaciones pendientes.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground text-center py-8">
+              Visualización en desarrollo
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Activity className="h-4 w-4 text-unimeta-red" />
+            Actividad comercial reciente
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Cada fila abre la hoja de vida del lead.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="py-3 px-3 font-medium">Lead</th>
+                  <th className="py-3 px-3 font-medium">Programa</th>
+                  <th className="py-3 px-3 font-medium">Asesor</th>
+                  <th className="py-3 px-3 font-medium">Estado</th>
+                  <th className="py-3 px-3 font-medium">Próxima acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-6 text-muted-foreground">
+                      Cargando...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

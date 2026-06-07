@@ -1,8 +1,53 @@
-import { useLeads } from '../hooks/useLeads';
-import { useAsesores } from '../hooks/useAsesores';
-import { useConversaciones } from '../hooks/useConversaciones';
-import { PROGRAMAS, FUENTES } from '../lib/api';
-import './AnaliticasPage.css';
+import {
+  Users,
+  Percent,
+  CalendarX2,
+  MessageCircleOff,
+  TrendingUp,
+  BarChart3,
+  ListChecks,
+  Loader2,
+  AlertTriangle,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useLeads } from '@/hooks/useLeads';
+import { useAsesores } from '@/hooks/useAsesores';
+import { useConversaciones } from '@/hooks/useConversaciones';
+import { PROGRAMAS, FUENTES } from '@/lib/api';
+
+interface BarItemProps {
+  label: string;
+  count: number;
+  color: string;
+  max: number;
+}
+
+function BarItem({ label, count, color, max }: BarItemProps) {
+  const pct = max > 0 ? (count / max) * 100 : 0;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-sm">
+        <span className="text-foreground">{label}</span>
+        <strong className="text-foreground">{count}</strong>
+      </div>
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const ESTADOS_COLORS: Record<string, string> = {
+  nuevo: '#4a90d9',
+  contactado: '#f39c12',
+  interesado: '#2ecc71',
+  calificado: '#9b59b6',
+  cerrado: '#e74c3c',
+};
 
 export function AnaliticasPage() {
   const { data: leads = [], isLoading: leadsLoading, error: leadsError } = useLeads();
@@ -10,9 +55,14 @@ export function AnaliticasPage() {
   const { data: conversaciones = [] } = useConversaciones();
 
   const totalLeads = leads.length;
-  const conversionRate = totalLeads > 0
-    ? Math.round((leads.filter((l) => l.estado === 'calificado' || l.estado === 'cerrado').length / totalLeads * 100))
-    : 0;
+  const conversionRate =
+    totalLeads > 0
+      ? Math.round(
+          (leads.filter((l) => l.estado === 'calificado' || l.estado === 'cerrado').length /
+            totalLeads) *
+            100
+        )
+      : 0;
 
   const today = new Date();
   const pendingTasks = leads.filter((l) => {
@@ -23,197 +73,238 @@ export function AnaliticasPage() {
   const pendingChats = conversaciones.filter((c) => c.sin_respuesta).length;
 
   const getEstadoCount = (estado: string) => leads.filter((l) => l.estado === estado).length;
-  const getProgramaCount = (programa: string) => leads.filter((l) => l.programa === programa).length;
+  const getProgramaCount = (programa: string) =>
+    leads.filter((l) => l.programa === programa).length;
   const getFuenteCount = (fuente: string) => leads.filter((l) => l.fuente === fuente).length;
-  const getAsesorCount = (asesorId: number) => leads.filter((l) => {
-    if (typeof l.asesor === 'object' && l.asesor) return l.asesor.id === asesorId;
-    return false;
-  }).length;
+  const getAsesorCount = (asesorId: number) =>
+    leads.filter((l) => typeof l.asesor === 'object' && l.asesor && l.asesor.id === asesorId).length;
 
   const maxCount = Math.max(
-    ...['nuevo', 'contactado', 'interesado', 'calificado', 'cerrado'].map((e) => getEstadoCount(e)),
+    ...['nuevo', 'contactado', 'interesado', 'calificado', 'cerrado'].map((e) =>
+      getEstadoCount(e)
+    ),
     ...PROGRAMAS.map((p) => getProgramaCount(p)),
     ...FUENTES.map((f) => getFuenteCount(f)),
     ...asesores.map((a) => getAsesorCount(a.id))
   );
 
-  const renderBar = (label: string, count: number, color: string) => (
-    <div className="bar-item" key={label}>
-      <div className="bar-label">
-        <span>{label}</span>
-        <strong>{count}</strong>
-      </div>
-      <div className="bar-track">
-        <div className="bar-fill" style={{ width: `${maxCount > 0 ? (count / maxCount) * 100 : 0}%`, background: color }}></div>
-      </div>
-    </div>
-  );
-
-  const leadsPorAsesorPromedio = asesores.length > 0
-    ? Math.round(totalLeads / asesores.length)
-    : 0;
+  const leadsPorAsesorPromedio = asesores.length > 0 ? Math.round(totalLeads / asesores.length) : 0;
 
   const serviceIndicators = [
-    { indicator: 'Tasa de conversion total', valor: `${conversionRate}%`, meta: '25%' },
+    { indicator: 'Tasa de conversión total', valor: `${conversionRate}%`, meta: '25%' },
     { indicator: 'Leads nuevos / mes', valor: String(getEstadoCount('nuevo')), meta: '15' },
     { indicator: 'Tiempo promedio respuesta', valor: '--', meta: '1h' },
     { indicator: 'Tasa de respuesta', valor: '--', meta: '90%' },
-    { indicator: 'Leads por asesor (promedio)', valor: String(leadsPorAsesorPromedio), meta: '10' },
-    { indicator: 'Seguimientos realizados', valor: String(getEstadoCount('contactado') + getEstadoCount('interesado')), meta: '30' },
+    {
+      indicator: 'Leads por asesor (promedio)',
+      valor: String(leadsPorAsesorPromedio),
+      meta: '10',
+    },
+    {
+      indicator: 'Seguimientos realizados',
+      valor: String(getEstadoCount('contactado') + getEstadoCount('interesado')),
+      meta: '30',
+    },
   ];
 
   if (leadsLoading) {
     return (
-      <div className="analytics-loading">
-        <div className="loading-spinner"><i className="fas fa-spinner fa-spin"></i> Cargando análisis...</div>
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        Cargando análisis...
       </div>
     );
   }
 
   if (leadsError) {
     return (
-      <div className="analytics-error">
-        <i className="fas fa-exclamation-triangle"></i>
+      <div className="flex flex-col items-center justify-center py-20 text-destructive">
+        <AlertTriangle className="h-8 w-8 mb-2" />
         <p>Error al cargar datos: {leadsError.message}</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <section className="page-intro-card">
-        <div>
-          <h2>Tableros operativos listos para tomar datos desde Strapi</h2>
-          <p>Los indicadores se calculan desde la capa de datos comun, por eso despues solo cambias el origen y no el tablero.</p>
-        </div>
-        <div className="intro-chip-group">
-          <span className="intro-chip">BI academico</span>
-        </div>
-      </section>
-
-      <div className="kpi-container">
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Leads</span>
-            <span className="kpi-icon"><i className="fas fa-users"></i></span>
-          </div>
-          <div className="kpi-value">{totalLeads}</div>
-          <div className="kpi-change">Base analizada</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Conversion</span>
-            <span className="kpi-icon"><i className="fas fa-percent"></i></span>
-          </div>
-          <div className="kpi-value">{conversionRate}%</div>
-          <div className="kpi-change">Matriculados sobre total</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Seguimientos vencidos</span>
-            <span className="kpi-icon"><i className="fas fa-calendar-xmark"></i></span>
-          </div>
-          <div className="kpi-value">{pendingTasks}</div>
-          <div className="kpi-change negative">Alertas operativas</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Chats pendientes</span>
-            <span className="kpi-icon"><i className="fas fa-comment-slash"></i></span>
-          </div>
-          <div className="kpi-value">{pendingChats}</div>
-          <div className="kpi-change">Bandeja comercial</div>
-        </div>
-      </div>
-
-      <div className="analytics-grid">
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Embudo comercial</h2>
-              <p className="section-subtitle">Distribucion por estado del lead.</p>
-            </div>
-          </div>
-          <div className="bar-list">
-            {renderBar('Nuevo', getEstadoCount('nuevo'), '#4a90d9')}
-            {renderBar('Contactado', getEstadoCount('contactado'), '#f39c12')}
-            {renderBar('Interesado', getEstadoCount('interesado'), '#2ecc71')}
-            {renderBar('Calificado', getEstadoCount('calificado'), '#9b59b6')}
-            {renderBar('Cerrado', getEstadoCount('cerrado'), '#e74c3c')}
-          </div>
-        </section>
-
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Leads por programa</h2>
-              <p className="section-subtitle">Prioriza programas con mayor volumen.</p>
-            </div>
-          </div>
-          <div className="bar-list">
-            {PROGRAMAS.map((p) => renderBar(p, getProgramaCount(p), '#4a90d9'))}
-          </div>
-        </section>
-
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Leads por fuente</h2>
-              <p className="section-subtitle">Mide rendimiento de canales de captacion.</p>
-            </div>
-          </div>
-          <div className="bar-list">
-            {FUENTES.map((f) => renderBar(f.charAt(0).toUpperCase() + f.slice(1), getFuenteCount(f), '#2ecc71'))}
-          </div>
-        </section>
-
-        <section className="chart-section">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">Carga por asesor</h2>
-              <p className="section-subtitle">Ayuda a distribuir la operacion del equipo.</p>
-            </div>
-          </div>
-          <div className="bar-list">
-            {asesoresLoading ? (
-              <p className="no-data-message">Cargando asesores...</p>
-            ) : asesores.length === 0 ? (
-              <p className="no-data-message">Sin asesores registrados aún.</p>
-            ) : (
-              asesores.map((a) => renderBar(a.nombre, getAsesorCount(a.id), '#9b59b6'))
-            )}
-          </div>
-        </section>
-      </div>
-
-      <section className="table-section">
-        <div className="section-header">
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="flex justify-between items-center py-5">
           <div>
-            <h2 className="section-title">Indicadores de servicio</h2>
-            <p className="section-subtitle">KPIs base recomendados para el trabajo de grado.</p>
+            <h2 className="text-lg font-semibold mb-1">
+              Tableros operativos conectados a Strapi
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Los indicadores se calculan desde la capa de datos común, después solo cambias el
+              origen y no el tablero.
+            </p>
           </div>
-        </div>
-        <div className="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Indicador</th>
-                <th>Valor</th>
-                <th>Meta sugerida</th>
-              </tr>
-            </thead>
-            <tbody>
-              {serviceIndicators.map((item) => (
-                <tr key={item.indicator}>
-                  <td>{item.indicator}</td>
-                  <td><strong>{item.valor}</strong></td>
-                  <td>{item.meta}</td>
+          <Badge className="bg-unimeta-red text-white">BI académico</Badge>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Leads</span>
+              <Users className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{totalLeads}</div>
+            <div className="text-xs text-muted-foreground">Base analizada</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Conversión</span>
+              <Percent className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{conversionRate}%</div>
+            <div className="text-xs text-muted-foreground">Calificados sobre total</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Seguimientos vencidos</span>
+              <CalendarX2 className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="text-3xl font-bold">{pendingTasks}</div>
+            <div className="text-xs text-destructive">Alertas operativas</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Chats pendientes</span>
+              <MessageCircleOff className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{pendingChats}</div>
+            <div className="text-xs text-muted-foreground">Bandeja comercial</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-4 w-4 text-unimeta-red" /> Embudo comercial
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Distribución por estado del lead.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(['nuevo', 'contactado', 'interesado', 'calificado', 'cerrado'] as const).map((e) => (
+              <BarItem
+                key={e}
+                label={e.charAt(0).toUpperCase() + e.slice(1)}
+                count={getEstadoCount(e)}
+                color={ESTADOS_COLORS[e]}
+                max={maxCount}
+              />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-unimeta-red" /> Leads por programa
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Prioriza programas con mayor volumen.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {PROGRAMAS.map((p) => (
+              <BarItem
+                key={p}
+                label={p}
+                count={getProgramaCount(p)}
+                color="#4a90d9"
+                max={maxCount}
+              />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-unimeta-red" /> Leads por fuente
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Mide rendimiento de canales de captación.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {FUENTES.map((f) => (
+              <BarItem
+                key={f}
+                label={f.charAt(0).toUpperCase() + f.slice(1)}
+                count={getFuenteCount(f)}
+                color="#2ecc71"
+                max={maxCount}
+              />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-unimeta-red" /> Carga por asesor
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Ayuda a distribuir la operación del equipo.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {asesoresLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Cargando asesores...</p>
+            ) : asesores.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Sin asesores registrados aún.
+              </p>
+            ) : (
+              asesores.map((a) => (
+                <BarItem
+                  key={a.id}
+                  label={a.nombre}
+                  count={getAsesorCount(a.id)}
+                  color="#9b59b6"
+                  max={maxCount}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ListChecks className="h-4 w-4 text-unimeta-red" /> Indicadores de servicio
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">KPIs base recomendados para el trabajo de grado.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-muted-foreground text-left">
+                <tr>
+                  <th className="py-3 px-3 font-medium">Indicador</th>
+                  <th className="py-3 px-3 font-medium">Valor</th>
+                  <th className="py-3 px-3 font-medium">Meta sugerida</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {serviceIndicators.map((item) => (
+                  <tr key={item.indicator} className="border-t border-border">
+                    <td className="py-3 px-3">{item.indicator}</td>
+                    <td className="py-3 px-3 font-semibold">{item.valor}</td>
+                    <td className="py-3 px-3">{item.meta}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

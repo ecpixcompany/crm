@@ -1,11 +1,38 @@
 import { useState } from 'react';
-import { PRIORIDADES } from '../lib/api';
-import type { Lead, Actividad } from '../lib/api';
-import { useLeads, useUpdateLead } from '../hooks/useLeads';
-import { useAsesores } from '../hooks/useAsesores';
-import { useActividades, useCreateActividad } from '../hooks/useActividades';
-import { LeadDetailModal } from '../components/modals/LeadDetailModal';
-import './SeguimientoPage.css';
+import {
+  Search,
+  Users,
+  AlertTriangle,
+  CheckCircle2,
+  Ban,
+  Phone,
+  Mail,
+  Handshake,
+  MapPin,
+  StickyNote,
+  ArrowRightLeft,
+  Plus,
+  Save,
+  Check,
+  Clock,
+  CalendarClock,
+  ChevronRight,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { PRIORIDADES, type Lead, type Actividad } from '@/lib/api';
+import { useLeads, useUpdateLead } from '@/hooks/useLeads';
+import { useAsesores } from '@/hooks/useAsesores';
+import { useActividades, useCreateActividad } from '@/hooks/useActividades';
+import { LeadDetailModal } from '@/components/modals/LeadDetailModal';
+import { cn } from '@/lib/utils';
 
 const STAGES = [
   { id: 'nuevo', label: 'Nuevo', color: '#4a90d9' },
@@ -19,13 +46,13 @@ const TIPOS_ACTIVIDAD: Actividad['tipo'][] = ['llamada', 'correo', 'reunion', 'v
 
 const tipoIcon = (tipo: Actividad['tipo']) => {
   switch (tipo) {
-    case 'llamada': return 'fa-phone';
-    case 'correo': return 'fa-envelope';
-    case 'reunion': return 'fa-handshake';
-    case 'visita': return 'fa-location-dot';
-    case 'nota': return 'fa-note-sticky';
-    case 'cambio_estado': return 'fa-arrow-right-arrow-left';
-    default: return 'fa-circle';
+    case 'llamada': return Phone;
+    case 'correo': return Mail;
+    case 'reunion': return Handshake;
+    case 'visita': return MapPin;
+    case 'nota': return StickyNote;
+    case 'cambio_estado': return ArrowRightLeft;
+    default: return CheckCircle2;
   }
 };
 
@@ -41,6 +68,43 @@ const tipoLabel = (tipo: Actividad['tipo']) => {
   }
 };
 
+const tipoColor = (tipo: Actividad['tipo']) => {
+  switch (tipo) {
+    case 'llamada': return 'border-l-blue-500 text-blue-600 bg-blue-50';
+    case 'correo': return 'border-l-orange-500 text-orange-600 bg-orange-50';
+    case 'reunion': return 'border-l-emerald-500 text-emerald-600 bg-emerald-50';
+    case 'visita': return 'border-l-purple-500 text-purple-600 bg-purple-50';
+    case 'nota': return 'border-l-slate-400 text-slate-600 bg-slate-50';
+    case 'cambio_estado': return 'border-l-slate-700 text-slate-700 bg-slate-100';
+    default: return 'border-l-gray-400 text-gray-600 bg-gray-50';
+  }
+};
+
+const getInitials = (n: string, a: string) => `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
+
+const getAvatarColor = (nombre: string) => {
+  const colors = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+  return colors[nombre.charCodeAt(0) % colors.length];
+};
+
+const getAsesorName = (asesor: Lead['asesor']) => {
+  if (!asesor) return 'Sin asignar';
+  if (typeof asesor === 'string') return asesor;
+  if (typeof asesor === 'number') return String(asesor);
+  return asesor.nombre;
+};
+
+const isOverdue = (fecha?: string) => fecha && new Date(fecha) < new Date();
+
+const formatActivityTime = (timestamp: string) => {
+  const d = new Date(timestamp);
+  return (
+    d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) +
+    ' · ' +
+    d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  );
+};
+
 export function SeguimientoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [advisorFilter, setAdvisorFilter] = useState('');
@@ -50,7 +114,6 @@ export function SeguimientoPage() {
   const [targetStage, setTargetStage] = useState<string>('');
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Form state for quick activity
   const [activityTipo, setActivityTipo] = useState<Actividad['tipo']>('llamada');
   const [activityDesc, setActivityDesc] = useState('');
   const [activityFecha, setActivityFecha] = useState(new Date().toISOString().split('T')[0]);
@@ -66,19 +129,19 @@ export function SeguimientoPage() {
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
-      searchTerm === '' ||
+      !searchTerm ||
       `${lead.nombres} ${lead.apellidos} ${lead.programa} ${lead.ciudad}`
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-    const matchesAdvisor = advisorFilter === '' ||
+    const matchesAdvisor =
+      !advisorFilter ||
       (typeof lead.asesor === 'object' && lead.asesor?.id === Number(advisorFilter)) ||
       (typeof lead.asesor === 'string' && lead.asesor === advisorFilter);
-    const matchesPriority = priorityFilter === '' || lead.prioridad === priorityFilter;
+    const matchesPriority = !priorityFilter || lead.prioridad === priorityFilter;
     return matchesSearch && matchesAdvisor && matchesPriority;
   });
 
-  const getLeadsByStage = (stage: string) =>
-    filteredLeads.filter((l) => l.estado === stage);
+  const getLeadsByStage = (stage: string) => filteredLeads.filter((l) => l.estado === stage);
 
   const activeCount = leads.filter((l) => l.estado !== 'cerrado').length;
   const overdueCount = leads.filter((l) => {
@@ -97,18 +160,21 @@ export function SeguimientoPage() {
       { id: lead.documentId, data: { estado: newEstado } },
       {
         onSuccess: () => {
-          createActividad.mutate({
-            lead: lead.id,
-            tipo: 'cambio_estado',
-            descripcion: `Estado cambiado de ${estadoAnterior} a ${newEstado}`,
-            timestamp: new Date().toISOString(),
-          }, {
-            onSuccess: () => {
-              setMovingLeadId(null);
-              setTargetStage('');
+          createActividad.mutate(
+            {
+              lead: lead.id,
+              tipo: 'cambio_estado',
+              descripcion: `Estado cambiado de ${estadoAnterior} a ${newEstado}`,
+              timestamp: new Date().toISOString(),
             },
-            onError: () => setMovingLeadId(null),
-          });
+            {
+              onSuccess: () => {
+                setMovingLeadId(null);
+                setTargetStage('');
+              },
+              onError: () => setMovingLeadId(null),
+            }
+          );
         },
         onError: () => setMovingLeadId(null),
       }
@@ -123,345 +189,427 @@ export function SeguimientoPage() {
   const handleSaveActivity = () => {
     if (!selectedLead || !activityDesc.trim()) return;
 
-    createActividad.mutate({
-      lead: selectedLead.id,
-      tipo: activityTipo,
-      descripcion: activityDesc,
-      timestamp: new Date(activityFecha).toISOString(),
-    }, {
-      onSuccess: () => {
-        setActivityDesc('');
-        setActivityTipo('llamada');
-        setActivityFecha(new Date().toISOString().split('T')[0]);
-        setActivitySuccess(true);
-        setTimeout(() => setActivitySuccess(false), 2000);
+    createActividad.mutate(
+      {
+        lead: selectedLead.id,
+        tipo: activityTipo,
+        descripcion: activityDesc,
+        timestamp: new Date(activityFecha).toISOString(),
       },
-    });
-  };
-
-  const getInitials = (nombres: string, apellidos: string) =>
-    `${nombres.charAt(0)}${apellidos.charAt(0)}`.toUpperCase();
-
-  const getAvatarColor = (nombre: string) => {
-    const colors = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
-    return colors[nombre.charCodeAt(0) % colors.length];
-  };
-
-  const getPriorityClass = (prioridad: string) => {
-    switch (prioridad) {
-      case 'alta': return 'priority-high';
-      case 'media': return 'priority-medium';
-      case 'baja': return 'priority-low';
-      default: return '';
-    }
-  };
-
-  const getAsesorName = (asesor: Lead['asesor']) => {
-    if (!asesor) return 'Sin asignar';
-    if (typeof asesor === 'string') return asesor;
-    if (typeof asesor === 'number') return String(asesor);
-    return asesor.nombre;
-  };
-
-  const isOverdue = (fecha: string | undefined) => {
-    if (!fecha) return false;
-    return new Date(fecha) < new Date();
-  };
-
-  const formatActivityTime = (timestamp: string) => {
-    const d = new Date(timestamp);
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) + ' · ' +
-      d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      {
+        onSuccess: () => {
+          setActivityDesc('');
+          setActivityTipo('llamada');
+          setActivityFecha(new Date().toISOString().split('T')[0]);
+          setActivitySuccess(true);
+          setTimeout(() => setActivitySuccess(false), 2000);
+        },
+      }
+    );
   };
 
   return (
-    <div>
-      <section className="page-intro-card">
-        <div>
-          <h2>Pipeline visual listo para alimentar con Strapi</h2>
-          <p>Mueve leads por etapa, registra actividades concretas y consulta el historial sin salir del pipeline.</p>
-        </div>
-        <div className="intro-chip-group">
-          <span className="intro-chip">Kanban CRM</span>
-        </div>
-      </section>
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="flex justify-between items-center py-5">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Pipeline Kanban con seguimiento</h2>
+            <p className="text-sm text-muted-foreground">
+              Mueve leads por etapa, registra actividades concretas y consulta el historial sin salir del pipeline.
+            </p>
+          </div>
+          <Badge className="bg-unimeta-red text-white">Kanban CRM</Badge>
+        </CardContent>
+      </Card>
 
-      <div className="kpi-container">
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Activos</span>
-            <span className="kpi-icon"><i className="fas fa-users-rays"></i></span>
-          </div>
-          <div className="kpi-value">{activeCount}</div>
-          <div className="kpi-change">Leads en gestion</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Vencidos</span>
-            <span className="kpi-icon"><i className="fas fa-triangle-exclamation"></i></span>
-          </div>
-          <div className="kpi-value">{overdueCount}</div>
-          <div className="kpi-change negative">Seguimientos pendientes</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Listos para cierre</span>
-            <span className="kpi-icon"><i className="fas fa-check-to-slot"></i></span>
-          </div>
-          <div className="kpi-value">{readyCount}</div>
-          <div className="kpi-change">Etapa calificado</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Perdidos</span>
-            <span className="kpi-icon"><i className="fas fa-ban"></i></span>
-          </div>
-          <div className="kpi-value">{lostCount}</div>
-          <div className="kpi-change">Cierre descartado</div>
-        </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Activos</span>
+              <Users className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{activeCount}</div>
+            <div className="text-xs text-muted-foreground">Leads en gestión</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Vencidos</span>
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="text-3xl font-bold">{overdueCount}</div>
+            <div className="text-xs text-destructive">Seguimientos pendientes</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Listos para cierre</span>
+              <CheckCircle2 className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{readyCount}</div>
+            <div className="text-xs text-muted-foreground">Etapa calificado</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-sm text-muted-foreground">Perdidos</span>
+              <Ban className="h-5 w-5 text-unimeta-red" />
+            </div>
+            <div className="text-3xl font-bold">{lostCount}</div>
+            <div className="text-xs text-muted-foreground">Cierre descartado</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="toolbar-row pipeline-toolbar">
-        <div className="search-field">
-          <i className="fas fa-search"></i>
-          <input
-            id="pipelineSearchInput"
-            type="text"
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-3">
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             placeholder="Buscar por lead, programa, ciudad o asesor"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
           />
         </div>
-        <select
-          className="toolbar-select"
-          id="pipelineAdvisorFilter"
-          value={advisorFilter}
-          onChange={(e) => setAdvisorFilter(e.target.value)}
-          disabled={asesoresLoading}
-        >
-          <option value="">{asesoresLoading ? 'Cargando...' : 'Todos los asesores'}</option>
-          {!asesoresLoading && asesores.map((asesor) => (
-            <option key={asesor.id} value={asesor.id}>{asesor.nombre}</option>
-          ))}
-        </select>
-        <select
-          className="toolbar-select"
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-        >
-          <option value="">Todas las prioridades</option>
-          {PRIORIDADES.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
+        <Select value={advisorFilter} onValueChange={setAdvisorFilter} disabled={asesoresLoading}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={asesoresLoading ? 'Cargando...' : 'Todos los asesores'} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los asesores</SelectItem>
+            {asesores.map((asesor) => (
+              <SelectItem key={asesor.id} value={String(asesor.id)}>
+                {asesor.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Todas las prioridades" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las prioridades</SelectItem>
+            {PRIORIDADES.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="pipeline-layout">
-        <section className="pipeline-board">
+      {/* Pipeline + Sidebar */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5 min-h-[500px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {STAGES.map((stage) => {
             const stageLeads = getLeadsByStage(stage.id);
             return (
-              <div key={stage.id} className="pipeline-column">
-                <div className="pipeline-column-header" style={{ borderTopColor: stage.color }}>
-                  <h3>{stage.label}</h3>
-                  <span className="pipeline-count">{stageLeads.length}</span>
+              <div
+                key={stage.id}
+                className="bg-muted/40 rounded-lg flex flex-col min-h-[400px]"
+                style={{ borderTop: `4px solid ${stage.color}` }}
+              >
+                <div className="px-4 py-3 bg-card rounded-t-lg flex justify-between items-center">
+                  <h3 className="text-sm font-semibold">{stage.label}</h3>
+                  <Badge variant="secondary" className="rounded-full">
+                    {stageLeads.length}
+                  </Badge>
                 </div>
-                <div className="pipeline-cards">
+                <ScrollArea className="flex-1 p-2 max-h-[70vh]">
                   {isLoading ? (
-                    <div className="pipeline-empty">Cargando...</div>
+                    <div className="text-center text-muted-foreground py-8 text-sm">Cargando...</div>
                   ) : error ? (
-                    <div className="pipeline-empty">Error</div>
+                    <div className="text-center text-destructive py-8 text-sm">Error</div>
                   ) : stageLeads.length === 0 ? (
-                    <div className="pipeline-empty">Sin leads</div>
+                    <div className="text-center text-muted-foreground py-8 text-sm">Sin leads</div>
                   ) : (
-                    stageLeads.map((lead) => (
-                      <div
-                        key={lead.id}
-                        className={`pipeline-card ${selectedLeadId === lead.documentId ? 'selected' : ''}`}
-                        onClick={() => {
-                          setSelectedLeadId(lead.documentId);
-                          setTargetStage('');
-                        }}
-                      >
-                        <div className="pipeline-card-header">
-                          <div className="pipeline-avatar" style={{ background: getAvatarColor(lead.nombres) }}>
-                            {getInitials(lead.nombres, lead.apellidos)}
-                          </div>
-                          <div className="pipeline-card-info">
-                            <span className="pipeline-card-name">{lead.nombres} {lead.apellidos}</span>
-                            <span className="pipeline-card-program">{lead.programa}</span>
-                          </div>
-                          <span className={`priority-badge ${getPriorityClass(lead.prioridad || '')}`}>
-                            {lead.prioridad || 'media'}
-                          </span>
-                        </div>
-                        <div className="pipeline-card-meta">
-                          <span><i className="fas fa-map-marker-alt"></i> {lead.ciudad}</span>
-                          <span><i className="fas fa-user"></i> {getAsesorName(lead.asesor)}</span>
-                        </div>
-                        {lead.fecha_proxima_accion && (
-                          <div className={`pipeline-card-action ${isOverdue(lead.fecha_proxima_accion) ? 'overdue' : ''}`}>
-                            <i className="fas fa-clock"></i>
-                            {new Date(lead.fecha_proxima_accion).toLocaleDateString('es-ES')}
-                          </div>
-                        )}
-                      </div>
-                    ))
+                    <div className="space-y-2">
+                      {stageLeads.map((lead) => (
+                        <Card
+                          key={lead.id}
+                          onClick={() => {
+                            setSelectedLeadId(lead.documentId);
+                            setTargetStage('');
+                          }}
+                          className={cn(
+                            'cursor-pointer transition-all hover:shadow-md',
+                            selectedLeadId === lead.documentId && 'border-unimeta-red shadow-md'
+                          )}
+                        >
+                          <CardContent className="p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-9 h-9 rounded-full text-white flex items-center justify-center font-semibold text-xs shrink-0"
+                                style={{ background: getAvatarColor(lead.nombres) }}
+                              >
+                                {getInitials(lead.nombres, lead.apellidos)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold truncate">
+                                  {lead.nombres} {lead.apellidos}
+                                </div>
+                                <div className="text-xs text-muted-foreground">{lead.programa}</div>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'text-[10px] capitalize shrink-0',
+                                  lead.prioridad === 'alta' && 'border-destructive text-destructive',
+                                  lead.prioridad === 'media' && 'border-orange-500 text-orange-600',
+                                  lead.prioridad === 'baja' && 'border-emerald-500 text-emerald-600'
+                                )}
+                              >
+                                {lead.prioridad || 'media'}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" /> {lead.ciudad}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" /> {getAsesorName(lead.asesor)}
+                              </span>
+                            </div>
+                            {lead.fecha_proxima_accion && (
+                              <div
+                                className={cn(
+                                  'flex items-center gap-1 text-[11px] px-2 py-1 rounded',
+                                  isOverdue(lead.fecha_proxima_accion)
+                                    ? 'bg-destructive/10 text-destructive font-semibold'
+                                    : 'bg-muted text-muted-foreground'
+                                )}
+                              >
+                                <Clock className="h-3 w-3" />
+                                {new Date(lead.fecha_proxima_accion).toLocaleDateString('es-ES')}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   )}
-                </div>
+                </ScrollArea>
               </div>
             );
           })}
-        </section>
+        </div>
 
-        <aside className="pipeline-sidebar">
-          {selectedLead ? (
-            <>
-              <div className="summary-card">
-                <div className="lead-selected-header">
-                  <div className="lead-selected-avatar" style={{ background: getAvatarColor(selectedLead.nombres) }}>
-                    {getInitials(selectedLead.nombres, selectedLead.apellidos)}
-                  </div>
-                  <div className="lead-selected-info">
-                    <strong>{selectedLead.nombres} {selectedLead.apellidos}</strong>
-                    <p>{selectedLead.programa}</p>
-                    <span className={`status-badge status-${selectedLead.estado}`}>{selectedLead.estado}</span>
-                  </div>
-                </div>
-                <ul className="summary-list">
-                  <li><span>Ciudad</span><strong>{selectedLead.ciudad}</strong></li>
-                  <li><span>Asesor</span><strong>{getAsesorName(selectedLead.asesor)}</strong></li>
-                  <li><span>Prioridad</span><strong className={getPriorityClass(selectedLead.prioridad || '')}>{selectedLead.prioridad || 'media'}</strong></li>
-                  <li><span>Próxima acción</span><strong>{selectedLead.fecha_proxima_accion || 'Sin asignar'}</strong></li>
-                </ul>
-              </div>
-
-              <div className="summary-card">
-                <h3><i className="fas fa-arrows-up-down-left-right"></i> Mover de etapa</h3>
-                <div className="move-stage-row">
-                  <select
-                    className="toolbar-select"
-                    value={targetStage}
-                    onChange={(e) => setTargetStage(e.target.value)}
-                    disabled={movingLeadId === selectedLead.documentId}
-                  >
-                    <option value="">Seleccionar etapa...</option>
-                    {STAGES.filter((s) => s.id !== selectedLead.estado).map((s) => (
-                      <option key={s.id} value={s.id}>{s.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    className="btn btn-primary"
-                    disabled={!targetStage || movingLeadId === selectedLead.documentId}
-                    onClick={handleMoveFromSidebar}
-                  >
-                    {movingLeadId === selectedLead.documentId ? 'Moviendo...' : 'Mover'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="summary-card">
-                <h3><i className="fas fa-circle-plus"></i> Registrar actividad</h3>
-                <div className="activity-form">
-                  <div className="form-group">
-                    <label className="form-label">Tipo</label>
-                    <select
-                      className="toolbar-select full"
-                      value={activityTipo}
-                      onChange={(e) => setActivityTipo(e.target.value as Actividad['tipo'])}
-                    >
-                      {TIPOS_ACTIVIDAD.map((t) => (
-                        <option key={t} value={t}>{tipoLabel(t)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Descripción</label>
-                    <textarea
-                      className="form-input"
-                      rows={2}
-                      placeholder="Describe la actividad..."
-                      value={activityDesc}
-                      onChange={(e) => setActivityDesc(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Fecha</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={activityFecha}
-                      onChange={(e) => setActivityFecha(e.target.value)}
-                    />
-                  </div>
-                  <button
-                    className="btn btn-primary full"
-                    onClick={handleSaveActivity}
-                    disabled={!activityDesc.trim() || createActividad.isPending}
-                  >
-                    {activitySuccess ? (
-                      <><i className="fas fa-check"></i> Guardado</>
-                    ) : createActividad.isPending ? (
-                      'Guardando...'
-                    ) : (
-                      <><i className="fas fa-floppy-disk"></i> Guardar actividad</>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="summary-card">
-                <div className="summary-card-header">
-                  <h3><i className="fas fa-clock-rotate-left"></i> Actividades recientes</h3>
-                  {actividades.length > 0 && (
-                    <button
-                      className="btn-link"
-                      onClick={() => setShowDetailModal(true)}
-                    >
-                      Ver todas
-                    </button>
-                  )}
-                </div>
-                {actividadesLoading ? (
-                  <p className="loading-text">Cargando...</p>
-                ) : actividades.length === 0 ? (
-                  <p className="no-selection">Sin actividades registradas</p>
-                ) : (
-                  <ul className="activity-timeline">
-                    {actividades.slice(0, 5).map((act) => (
-                      <li key={act.documentId} className={`activity-item activity-${act.tipo}`}>
-                        <span className="activity-icon">
-                          <i className={`fas ${tipoIcon(act.tipo)}`}></i>
-                        </span>
-                        <div className="activity-body">
-                          <div className="activity-top">
-                            <strong>{tipoLabel(act.tipo)}</strong>
-                            <span className="activity-time">{formatActivityTime(act.timestamp)}</span>
-                          </div>
-                          {act.descripcion && (
-                            <p className="activity-desc">{act.descripcion}</p>
-                          )}
+        {/* Sidebar */}
+        <ScrollArea className="max-h-[80vh]">
+          <div className="space-y-3 pr-2">
+            {selectedLead ? (
+              <>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 pb-3 mb-3 border-b">
+                      <div
+                        className="w-12 h-12 rounded-full text-white flex items-center justify-center font-semibold shrink-0"
+                        style={{ background: getAvatarColor(selectedLead.nombres) }}
+                      >
+                        {getInitials(selectedLead.nombres, selectedLead.apellidos)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate">
+                          {selectedLead.nombres} {selectedLead.apellidos}
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="summary-card">
-              <p className="no-selection">Selecciona un lead del pipeline para ver detalles, mover de etapa y registrar actividades.</p>
-            </div>
-          )}
-        </aside>
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {selectedLead.programa}
+                        </div>
+                        <Badge className={cn('text-[10px] capitalize', `bg-${stageColor(selectedLead.estado)}-100`)}>
+                          {selectedLead.estado}
+                        </Badge>
+                      </div>
+                    </div>
+                    <dl className="space-y-1.5 text-xs">
+                      <div className="flex justify-between"><dt className="text-muted-foreground">Ciudad</dt><dd className="font-medium">{selectedLead.ciudad}</dd></div>
+                      <div className="flex justify-between"><dt className="text-muted-foreground">Asesor</dt><dd className="font-medium">{getAsesorName(selectedLead.asesor)}</dd></div>
+                      <div className="flex justify-between"><dt className="text-muted-foreground">Prioridad</dt><dd className="font-medium capitalize">{selectedLead.prioridad || 'media'}</dd></div>
+                      <div className="flex justify-between"><dt className="text-muted-foreground">Próxima acción</dt><dd className="font-medium">{selectedLead.fecha_proxima_accion || 'Sin asignar'}</dd></div>
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <ChevronRight className="h-4 w-4 text-unimeta-red" /> Mover de etapa
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Select value={targetStage} onValueChange={setTargetStage} disabled={movingLeadId === selectedLead.documentId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar etapa..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAGES.filter((s) => s.id !== selectedLead.estado).map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={handleMoveFromSidebar}
+                      disabled={!targetStage || movingLeadId === selectedLead.documentId}
+                      className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+                    >
+                      {movingLeadId === selectedLead.documentId ? 'Moviendo...' : 'Mover'}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <Plus className="h-4 w-4 text-unimeta-red" /> Registrar actividad
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Tipo</Label>
+                      <Select value={activityTipo} onValueChange={(v) => setActivityTipo(v as Actividad['tipo'])}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIPOS_ACTIVIDAD.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {tipoLabel(t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Descripción</Label>
+                      <Textarea
+                        rows={2}
+                        placeholder="Describe la actividad..."
+                        value={activityDesc}
+                        onChange={(e) => setActivityDesc(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fecha</Label>
+                      <Input
+                        type="date"
+                        value={activityFecha}
+                        onChange={(e) => setActivityFecha(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleSaveActivity}
+                      disabled={!activityDesc.trim() || createActividad.isPending}
+                      className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+                    >
+                      {activitySuccess ? (
+                        <>
+                          <Check className="h-4 w-4" /> Guardado
+                        </>
+                      ) : createActividad.isPending ? (
+                        'Guardando...'
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" /> Guardar actividad
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-unimeta-red" /> Actividades recientes
+                      </span>
+                      {actividades.length > 0 && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setShowDetailModal(true)}
+                          className="h-auto p-0 text-xs text-unimeta-red"
+                        >
+                          Ver todas
+                        </Button>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {actividadesLoading ? (
+                      <p className="text-xs text-muted-foreground text-center py-3">Cargando...</p>
+                    ) : actividades.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-3">
+                        Sin actividades registradas
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {actividades.slice(0, 5).map((act) => {
+                          const Icon = tipoIcon(act.tipo);
+                          return (
+                            <li
+                              key={act.documentId}
+                              className={cn(
+                                'p-2.5 rounded-md border-l-[3px] flex gap-2.5',
+                                tipoColor(act.tipo)
+                              )}
+                            >
+                              <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-baseline gap-2 mb-0.5">
+                                  <strong className="text-xs font-semibold">
+                                    {tipoLabel(act.tipo)}
+                                  </strong>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                    {formatActivityTime(act.timestamp)}
+                                  </span>
+                                </div>
+                                {act.descripcion && (
+                                  <p className="text-[11px] text-foreground/80 leading-snug">
+                                    {act.descripcion}
+                                  </p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                  Selecciona un lead del pipeline para ver detalles, mover de etapa y registrar actividades.
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </ScrollArea>
       </div>
 
       {showDetailModal && selectedLead && (
-        <LeadDetailModal
-          lead={selectedLead}
-          onClose={() => setShowDetailModal(false)}
-        />
+        <LeadDetailModal lead={selectedLead} onClose={() => setShowDetailModal(false)} />
       )}
     </div>
   );
+}
+
+function stageColor(estado: string): string {
+  switch (estado) {
+    case 'nuevo': return 'blue';
+    case 'contactado': return 'orange';
+    case 'interesado': return 'emerald';
+    case 'calificado': return 'purple';
+    case 'cerrado': return 'red';
+    default: return 'slate';
+  }
 }
