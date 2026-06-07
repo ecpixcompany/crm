@@ -16,6 +16,23 @@ export function flattenList<T extends { id: number }>(items: (StrapiItem<T> | T)
   return items.map((i) => flatten<T>(i));
 }
 
+function cleanPayload(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).filter(([_, value]) => {
+      if (value === null || typeof value === 'number' || typeof value === 'boolean') {
+        return true;
+      }
+      if (typeof value === 'string' && value.trim() === '') {
+        return false;
+      }
+      if (value === undefined) {
+        return false;
+      }
+      return true;
+    })
+  );
+}
+
 async function strapiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -187,13 +204,14 @@ export async function fetchLead(documentId: string): Promise<Lead> {
 
 export async function createLead(input: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> {
   const { documentId, ...rest } = input as Record<string, unknown>;
-  const data: Record<string, unknown> = { ...rest };
+  let data: Record<string, unknown> = { ...rest };
   if (input.asesor) {
     const asesor = input.asesor as Asesor;
     data.asesor = typeof asesor === 'object' ? asesor.id : asesor;
   } else if (input.asesor === null) {
     data.asesor = null;
   }
+  data = cleanPayload(data);
   const res = await strapiFetch<StrapiResponse<Lead>>(getStrapiUrl('leads'), {
     method: 'POST',
     body: JSON.stringify({ data }),
@@ -210,7 +228,7 @@ export async function updateLead(documentId: string, input: Partial<Lead>): Prom
     'tipo_proxima_accion', 'notas', 'asesor'
   ];
 
-  const data: Record<string, unknown> = {};
+  let data: Record<string, unknown> = {};
 
   for (const field of EDITABLE_FIELDS) {
     if (field in input) {
@@ -227,6 +245,8 @@ export async function updateLead(documentId: string, input: Partial<Lead>): Prom
       data.asesor = typeof asesor === 'object' ? asesor.id : asesor;
     }
   }
+
+  data = cleanPayload(data);
 
   const res = await strapiFetch<StrapiResponse<Lead>>(getStrapiUrl('leads', documentId), {
     method: 'PUT',
