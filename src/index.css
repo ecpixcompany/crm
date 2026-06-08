@@ -1,93 +1,158 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ============================================================================
-   Tema Unimeta - Paleta institucional
+   Tema Unimeta — Diseño institucional serio y minimalista
    ============================================================================ */
 
 @theme {
-  --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Colores institucionales Unimeta */
+  /* Branding Unimeta — solo se usa en acciones clave */
   --color-unimeta-red: #e30614;
   --color-unimeta-red-dark: #be0d0d;
-  --color-unimeta-yellow: #ffcd1c;
-  --color-unimeta-green: #03e16d;
-  --color-unimeta-gray: #5a5a5a;
 
-  /* shadcn theme - mapeo a colores Unimeta */
-  --color-background: #f5f5f5;
-  --color-foreground: #1a1a2e;
+  /* Paleta neutral slate — base del UI serio */
+  --color-background: #f8f9fb;
+  --color-foreground: #0f172a;
   --color-card: #ffffff;
-  --color-card-foreground: #1a1a2e;
+  --color-card-foreground: #0f172a;
   --color-popover: #ffffff;
-  --color-popover-foreground: #1a1a2e;
+  --color-popover-foreground: #0f172a;
   --color-primary: #e30614;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #fef2f2;
-  --color-secondary-foreground: #be0d0d;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #5a5a5a;
-  --color-accent: #fef2f2;
-  --color-accent-foreground: #e30614;
-  --color-destructive: #e74c3c;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e0e0e0;
-  --color-input: #e0e0e0;
+  --color-border: #e2e8f0;
+  --color-input: #cbd5e1;
   --color-ring: #e30614;
 
-  /* Sidebar (oscuro con acentos Unimeta) */
-  --color-sidebar: #1a1a2e;
-  --color-sidebar-foreground: rgba(255, 255, 255, 0.7);
+  /* Sidebar (oscuro, texto opaco para WCAG) */
+  --color-sidebar: #0f172a;
+  --color-sidebar-foreground: #ffffff;
   --color-sidebar-primary: #e30614;
   --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: rgba(255, 255, 255, 0.1);
+  --color-sidebar-accent: rgba(255, 255, 255, 0.06);
   --color-sidebar-accent-foreground: #ffffff;
-  --color-sidebar-border: rgba(255, 255, 255, 0.1);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
   --color-sidebar-ring: #e30614;
+
+  /* Radios consistentes */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* Anchos del sidebar (se usan como utilidades) */
+  --sidebar-w: 260px;
+  --sidebar-w-collapsed: 68px;
 }
 
 /* ============================================================================
-   Base global
+   Utilidades de layout — sidebar colapsable
    ============================================================================ */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@utility ml-sidebar {
+  margin-left: var(--sidebar-w);
 }
 
-html, body, #root {
-  height: 100%;
+@utility ml-sidebar-collapsed {
+  margin-left: var(--sidebar-w-collapsed);
 }
 
-body {
-  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
-  background: var(--color-background);
+@utility w-sidebar {
+  width: var(--sidebar-w);
+}
+
+@utility w-sidebar-collapsed {
+  width: var(--sidebar-w-collapsed);
+}
+
+/* Reset mobile: el sidebar colapsable se oculta en <lg */
+@media (max-width: 1023px) {
+  .ml-sidebar,
+  .ml-sidebar-collapsed {
+    margin-left: 0;
+  }
+}
+
+/* ============================================================================
+   Base global — tipografía, accesibilidad
+   ============================================================================ */
+
+@layer base {
+  html, body, #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-[14px] font-normal leading-[1.6] antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03", "cv02";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans text-foreground font-semibold tracking-tight;
+    line-height: 1.3;
+  }
+
+  h1 { @apply text-[1.875rem] leading-[1.2] font-bold tracking-[-0.02em]; }
+  h2 { @apply text-2xl leading-[1.25]; }
+  h3 { @apply text-lg leading-[1.3]; }
+  h4 { @apply text-base leading-[1.4]; }
+
+  p { @apply leading-[1.6]; }
+
+  code, kbd, samp, pre {
+    @apply font-mono text-[0.875em];
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-unimeta-red rounded-sm;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ============================================================================
+   Pseudo-elementos y media queries que no entran en @layer base
+   ============================================================================ */
+
+::selection {
+  background: rgba(227, 6, 20, 0.15);
   color: var(--color-foreground);
-  font-weight: 400;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Open Sans", sans-serif;
-  font-weight: 600;
-  color: var(--color-foreground);
-}
-
-/* Scrollbar global */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid var(--color-background);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

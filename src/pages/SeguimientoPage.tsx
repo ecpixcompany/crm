@@ -26,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { PRIORIDADES, type Lead, type Actividad } from '@/lib/api';
 import { useLeads, useUpdateLead } from '@/hooks/useLeads';
 import { useAsesores } from '@/hooks/useAsesores';
@@ -35,11 +34,11 @@ import { LeadDetailModal } from '@/components/modals/LeadDetailModal';
 import { cn } from '@/lib/utils';
 
 const STAGES = [
-  { id: 'nuevo', label: 'Nuevo', color: '#4a90d9' },
-  { id: 'contactado', label: 'Contactado', color: '#f39c12' },
-  { id: 'interesado', label: 'Interesado', color: '#2ecc71' },
-  { id: 'calificado', label: 'Calificado', color: '#9b59b6' },
-  { id: 'cerrado', label: 'Cerrado', color: '#e74c3c' },
+  { id: 'nuevo', label: 'Nuevo', tone: 'border-slate-300' },
+  { id: 'contactado', label: 'Contactado', tone: 'border-amber-300' },
+  { id: 'interesado', label: 'Interesado', tone: 'border-emerald-400' },
+  { id: 'calificado', label: 'Calificado', tone: 'border-violet-400' },
+  { id: 'cerrado', label: 'Cerrado', tone: 'border-slate-400' },
 ] as const;
 
 const TIPOS_ACTIVIDAD: Actividad['tipo'][] = ['llamada', 'correo', 'reunion', 'visita', 'nota'];
@@ -68,22 +67,22 @@ const tipoLabel = (tipo: Actividad['tipo']) => {
   }
 };
 
-const tipoColor = (tipo: Actividad['tipo']) => {
+const tipoTone = (tipo: Actividad['tipo']) => {
   switch (tipo) {
-    case 'llamada': return 'border-l-blue-500 text-blue-600 bg-blue-50';
-    case 'correo': return 'border-l-orange-500 text-orange-600 bg-orange-50';
-    case 'reunion': return 'border-l-emerald-500 text-emerald-600 bg-emerald-50';
-    case 'visita': return 'border-l-purple-500 text-purple-600 bg-purple-50';
-    case 'nota': return 'border-l-slate-400 text-slate-600 bg-slate-50';
-    case 'cambio_estado': return 'border-l-slate-700 text-slate-700 bg-slate-100';
-    default: return 'border-l-gray-400 text-gray-600 bg-gray-50';
+    case 'llamada': return { bar: 'border-l-blue-500', icon: 'text-blue-600' };
+    case 'correo': return { bar: 'border-l-amber-500', icon: 'text-amber-600' };
+    case 'reunion': return { bar: 'border-l-emerald-500', icon: 'text-emerald-600' };
+    case 'visita': return { bar: 'border-l-violet-500', icon: 'text-violet-600' };
+    case 'nota': return { bar: 'border-l-slate-400', icon: 'text-slate-500' };
+    case 'cambio_estado': return { bar: 'border-l-slate-700', icon: 'text-slate-700' };
+    default: return { bar: 'border-l-slate-400', icon: 'text-slate-500' };
   }
 };
 
 const getInitials = (n: string, a: string) => `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
 
 const getAvatarColor = (nombre: string) => {
-  const colors = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+  const colors = ['#0f172a', '#475569', '#0891b2', '#7c3aed', '#db2777'];
   return colors[nombre.charCodeAt(0) % colors.length];
 };
 
@@ -103,6 +102,25 @@ const formatActivityTime = (timestamp: string) => {
     ' · ' +
     d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
   );
+};
+
+const ESTADO_TONE: Record<string, string> = {
+  nuevo: 'bg-blue-50 text-blue-700 ring-blue-600/10',
+  contactado: 'bg-amber-50 text-amber-700 ring-amber-600/15',
+  interesado: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
+  calificado: 'bg-violet-50 text-violet-700 ring-violet-600/15',
+  cerrado: 'bg-slate-100 text-slate-600 ring-slate-500/15',
+};
+
+const ESTADO_LABEL: Record<string, string> = {
+  nuevo: 'Nuevo', contactado: 'Contactado', interesado: 'Interesado',
+  calificado: 'Calificado', cerrado: 'Cerrado',
+};
+
+const PRIORIDAD_TONE: Record<string, string> = {
+  alta: 'bg-rose-50 text-rose-700 ring-rose-600/15',
+  media: 'bg-amber-50 text-amber-700 ring-amber-600/15',
+  baja: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
 };
 
 export function SeguimientoPage() {
@@ -210,75 +228,39 @@ export function SeguimientoPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="flex justify-between items-center py-5">
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Pipeline Kanban con seguimiento</h2>
-            <p className="text-sm text-muted-foreground">
-              Mueve leads por etapa, registra actividades concretas y consulta el historial sin salir del pipeline.
-            </p>
-          </div>
-          <Badge className="bg-unimeta-red text-white">Kanban CRM</Badge>
-        </CardContent>
-      </Card>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Activos</span>
-              <Users className="h-5 w-5 text-unimeta-red" />
-            </div>
-            <div className="text-3xl font-bold">{activeCount}</div>
-            <div className="text-xs text-muted-foreground">Leads en gestión</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Vencidos</span>
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-            </div>
-            <div className="text-3xl font-bold">{overdueCount}</div>
-            <div className="text-xs text-destructive">Seguimientos pendientes</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Listos para cierre</span>
-              <CheckCircle2 className="h-5 w-5 text-unimeta-red" />
-            </div>
-            <div className="text-3xl font-bold">{readyCount}</div>
-            <div className="text-xs text-muted-foreground">Etapa calificado</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-muted-foreground">Perdidos</span>
-              <Ban className="h-5 w-5 text-unimeta-red" />
-            </div>
-            <div className="text-3xl font-bold">{lostCount}</div>
-            <div className="text-xs text-muted-foreground">Cierre descartado</div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-[22px] font-semibold tracking-tight text-slate-900">
+            Seguimiento
+          </h2>
+          <p className="mt-1 text-[13.5px] text-slate-500">
+            Pipeline Kanban · mueve leads y registra actividades
+          </p>
+        </div>
+        <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+          Kanban CRM
+        </Badge>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiSeg label="Activos" value={activeCount} icon={<Users className="size-4" />} accent="default" />
+        <KpiSeg label="Vencidos" value={overdueCount} icon={<AlertTriangle className="size-4" />} accent={overdueCount > 0 ? "warning" : "default"} />
+        <KpiSeg label="Listos para cierre" value={readyCount} icon={<CheckCircle2 className="size-4" />} accent="default" />
+        <KpiSeg label="Perdidos" value={lostCount} icon={<Ban className="size-4" />} accent="muted" />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[260px]">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Buscar por lead, programa, ciudad o asesor"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="h-10 pl-10"
           />
         </div>
         <Select value={advisorFilter} onValueChange={setAdvisorFilter} disabled={asesoresLoading}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="h-10 w-[200px]">
             <SelectValue placeholder={asesoresLoading ? 'Cargando...' : 'Todos los asesores'} />
           </SelectTrigger>
           <SelectContent>
@@ -291,7 +273,7 @@ export function SeguimientoPage() {
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="h-10 w-[200px]">
             <SelectValue placeholder="Todas las prioridades" />
           </SelectTrigger>
           <SelectContent>
@@ -305,94 +287,109 @@ export function SeguimientoPage() {
         </Select>
       </div>
 
-      {/* Pipeline + Sidebar */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5 min-h-[500px]">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid min-h-[560px] grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="-mx-2 flex gap-3 overflow-x-auto px-2 pb-2 [scrollbar-width:thin]">
           {STAGES.map((stage) => {
             const stageLeads = getLeadsByStage(stage.id);
             return (
               <div
                 key={stage.id}
-                className="bg-muted/40 rounded-lg flex flex-col min-h-[400px]"
-                style={{ borderTop: `4px solid ${stage.color}` }}
+                className={cn(
+                  "flex min-h-[440px] w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50/40 border-t-[3px] xl:w-[280px]",
+                  stage.tone
+                )}
               >
-                <div className="px-4 py-3 bg-card rounded-t-lg flex justify-between items-center">
-                  <h3 className="text-sm font-semibold">{stage.label}</h3>
-                  <Badge variant="secondary" className="rounded-full">
+                <div className="flex items-center justify-between border-b border-slate-200/70 bg-white px-4 py-3">
+                  <h3 className="text-[12.5px] font-semibold uppercase tracking-wide text-slate-700">
+                    {stage.label}
+                  </h3>
+                  <Badge variant="secondary" className="rounded-full bg-slate-100 text-slate-700">
                     {stageLeads.length}
                   </Badge>
                 </div>
-                <ScrollArea className="flex-1 p-2 max-h-[70vh]">
+                <ScrollArea className="flex-1 px-2.5 pb-2.5 max-h-[72vh]">
                   {isLoading ? (
-                    <div className="text-center text-muted-foreground py-8 text-sm">Cargando...</div>
+                    <div className="py-8 text-center text-[13px] text-slate-500">Cargando…</div>
                   ) : error ? (
-                    <div className="text-center text-destructive py-8 text-sm">Error</div>
+                    <div className="py-8 text-center text-[13px] text-rose-600">Error</div>
                   ) : stageLeads.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8 text-sm">Sin leads</div>
+                    <div className="py-8 text-center text-[13px] text-slate-400">Sin leads</div>
                   ) : (
                     <div className="space-y-2">
-                      {stageLeads.map((lead) => (
-                        <Card
-                          key={lead.id}
-                          onClick={() => {
-                            setSelectedLeadId(lead.documentId);
-                            setTargetStage('');
-                          }}
-                          className={cn(
-                            'cursor-pointer transition-all hover:shadow-md',
-                            selectedLeadId === lead.documentId && 'border-unimeta-red shadow-md'
-                          )}
-                        >
-                          <CardContent className="p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-9 h-9 rounded-full text-white flex items-center justify-center font-semibold text-xs shrink-0"
-                                style={{ background: getAvatarColor(lead.nombres) }}
-                              >
-                                {getInitials(lead.nombres, lead.apellidos)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold truncate">
-                                  {lead.nombres} {lead.apellidos}
-                                </div>
-                                <div className="text-xs text-muted-foreground">{lead.programa}</div>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  'text-[10px] capitalize shrink-0',
-                                  lead.prioridad === 'alta' && 'border-destructive text-destructive',
-                                  lead.prioridad === 'media' && 'border-orange-500 text-orange-600',
-                                  lead.prioridad === 'baja' && 'border-emerald-500 text-emerald-600'
-                                )}
-                              >
-                                {lead.prioridad || 'media'}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" /> {lead.ciudad}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-3 w-3" /> {getAsesorName(lead.asesor)}
-                              </span>
-                            </div>
-                            {lead.fecha_proxima_accion && (
-                              <div
-                                className={cn(
-                                  'flex items-center gap-1 text-[11px] px-2 py-1 rounded',
-                                  isOverdue(lead.fecha_proxima_accion)
-                                    ? 'bg-destructive/10 text-destructive font-semibold'
-                                    : 'bg-muted text-muted-foreground'
-                                )}
-                              >
-                                <Clock className="h-3 w-3" />
-                                {new Date(lead.fecha_proxima_accion).toLocaleDateString('es-ES')}
-                              </div>
+                      {stageLeads.map((lead) => {
+                        const overdue = isOverdue(lead.fecha_proxima_accion);
+                        return (
+                          <Card
+                            key={lead.id}
+                            onClick={() => {
+                              setSelectedLeadId(lead.documentId);
+                              setTargetStage('');
+                            }}
+                            className={cn(
+                              'group relative cursor-pointer overflow-hidden border-slate-200/70 bg-card shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)] transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_4px_12px_0_rgb(15_23_42_/_0.08)]',
+                              selectedLeadId === lead.documentId &&
+                                'border-slate-900 shadow-[0_4px_12px_0_rgb(15_23_42_/_0.12)] ring-1 ring-slate-900/10'
                             )}
-                          </CardContent>
-                        </Card>
-                      ))}
+                          >
+                            <CardContent className="p-0">
+                              <div className="space-y-2 px-3 py-3.5">
+                                <div className="flex items-start gap-2.5">
+                                  <div
+                                    className="flex size-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white shadow-sm ring-2 ring-white"
+                                    style={{ background: getAvatarColor(lead.nombres) }}
+                                  >
+                                    {getInitials(lead.nombres, lead.apellidos)}
+                                  </div>
+                                  <div className="min-w-0 flex-1 pr-14">
+                                    <div className="line-clamp-2 text-[13.5px] font-semibold leading-tight text-slate-900">
+                                      {lead.nombres} {lead.apellidos}
+                                    </div>
+                                    <div className="mt-0.5 truncate text-[11.5px] leading-tight text-slate-500">
+                                      {lead.programa}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 truncate text-[11.5px] text-slate-500">
+                                  <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                                  <span className="truncate">{lead.ciudad || 'Sin ciudad'}</span>
+                                  <span className="text-slate-300">·</span>
+                                  <Users className="size-3.5 shrink-0 text-slate-400" />
+                                  <span className="truncate">{getAsesorName(lead.asesor)}</span>
+                                </div>
+                              </div>
+                              {lead.prioridad && (
+                                <span
+                                  className={cn(
+                                    'absolute right-3 top-3 z-10 rounded-md px-1.5 py-0.5 text-[10px] font-medium capitalize ring-1 ring-inset',
+                                    PRIORIDAD_TONE[lead.prioridad] || PRIORIDAD_TONE.media
+                                  )}
+                                >
+                                  {lead.prioridad}
+                                </span>
+                              )}
+                              {lead.fecha_proxima_accion && (
+                                <div
+                                  className={cn(
+                                    'flex items-center gap-1.5 border-t px-3 py-1.5 text-[11px] font-medium',
+                                    overdue
+                                      ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                      : 'border-slate-200 bg-slate-50 text-slate-600'
+                                  )}
+                                >
+                                  <Clock className="size-3 shrink-0" />
+                                  <span className="truncate">
+                                    {overdue ? 'Vencida · ' : 'Próxima · '}
+                                    {new Date(lead.fecha_proxima_accion).toLocaleDateString('es-ES', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
@@ -401,51 +398,58 @@ export function SeguimientoPage() {
           })}
         </div>
 
-        {/* Sidebar */}
         <ScrollArea className="max-h-[80vh]">
-          <div className="space-y-3 pr-2">
+          <div className="space-y-4 pr-1">
             {selectedLead ? (
               <>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3 pb-3 mb-3 border-b">
+                <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+                  <CardContent className="p-5">
+                    <div className="mb-4 flex items-center gap-3 border-b border-slate-200/70 pb-4">
                       <div
-                        className="w-12 h-12 rounded-full text-white flex items-center justify-center font-semibold shrink-0"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
                         style={{ background: getAvatarColor(selectedLead.nombres) }}
                       >
                         {getInitials(selectedLead.nombres, selectedLead.apellidos)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[14px] font-semibold text-slate-900">
                           {selectedLead.nombres} {selectedLead.apellidos}
                         </div>
-                        <div className="text-xs text-muted-foreground mb-1">
+                        <div className="mt-0.5 truncate text-[12px] text-slate-500">
                           {selectedLead.programa}
                         </div>
-                        <Badge className={cn('text-[10px] capitalize', `bg-${stageColor(selectedLead.estado)}-100`)}>
-                          {selectedLead.estado}
-                        </Badge>
+                        <div className="mt-1.5">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+                              ESTADO_TONE[selectedLead.estado] || ESTADO_TONE.nuevo
+                            )}
+                          >
+                            {ESTADO_LABEL[selectedLead.estado] || selectedLead.estado}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <dl className="space-y-1.5 text-xs">
-                      <div className="flex justify-between"><dt className="text-muted-foreground">Ciudad</dt><dd className="font-medium">{selectedLead.ciudad}</dd></div>
-                      <div className="flex justify-between"><dt className="text-muted-foreground">Asesor</dt><dd className="font-medium">{getAsesorName(selectedLead.asesor)}</dd></div>
-                      <div className="flex justify-between"><dt className="text-muted-foreground">Prioridad</dt><dd className="font-medium capitalize">{selectedLead.prioridad || 'media'}</dd></div>
-                      <div className="flex justify-between"><dt className="text-muted-foreground">Próxima acción</dt><dd className="font-medium">{selectedLead.fecha_proxima_accion || 'Sin asignar'}</dd></div>
+                    <dl className="space-y-2 text-[12.5px]">
+                      <Row label="Ciudad" value={selectedLead.ciudad} />
+                      <Row label="Asesor" value={getAsesorName(selectedLead.asesor)} />
+                      <Row label="Prioridad" value={selectedLead.prioridad || 'media'} />
+                      <Row label="Próxima acción" value={selectedLead.fecha_proxima_accion || 'Sin asignar'} />
                     </dl>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <ChevronRight className="h-4 w-4 text-unimeta-red" /> Mover de etapa
+                <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+                  <CardHeader className="border-b border-slate-200/70">
+                    <CardTitle className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+                      <ChevronRight className="size-4 text-slate-400" />
+                      Mover de etapa
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-3 p-5">
                     <Select value={targetStage} onValueChange={setTargetStage} disabled={movingLeadId === selectedLead.documentId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar etapa..." />
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Seleccionar etapa…" />
                       </SelectTrigger>
                       <SelectContent>
                         {STAGES.filter((s) => s.id !== selectedLead.estado).map((s) => (
@@ -458,24 +462,25 @@ export function SeguimientoPage() {
                     <Button
                       onClick={handleMoveFromSidebar}
                       disabled={!targetStage || movingLeadId === selectedLead.documentId}
-                      className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+                      className="w-full bg-slate-900 text-white hover:bg-slate-800"
                     >
-                      {movingLeadId === selectedLead.documentId ? 'Moviendo...' : 'Mover'}
+                      {movingLeadId === selectedLead.documentId ? 'Moviendo…' : 'Mover'}
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Plus className="h-4 w-4 text-unimeta-red" /> Registrar actividad
+                <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+                  <CardHeader className="border-b border-slate-200/70">
+                    <CardTitle className="flex items-center gap-2 text-[13px] font-semibold text-slate-900">
+                      <Plus className="size-4 text-slate-400" />
+                      Registrar actividad
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-4 p-5">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Tipo</Label>
+                      <Label className="text-[12px] font-medium text-slate-700">Tipo</Label>
                       <Select value={activityTipo} onValueChange={(v) => setActivityTipo(v as Actividad['tipo'])}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -488,16 +493,16 @@ export function SeguimientoPage() {
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Descripción</Label>
+                      <Label className="text-[12px] font-medium text-slate-700">Descripción</Label>
                       <Textarea
                         rows={2}
-                        placeholder="Describe la actividad..."
+                        placeholder="Describe la actividad…"
                         value={activityDesc}
                         onChange={(e) => setActivityDesc(e.target.value)}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Fecha</Label>
+                      <Label className="text-[12px] font-medium text-slate-700">Fecha</Label>
                       <Input
                         type="date"
                         value={activityFecha}
@@ -507,72 +512,74 @@ export function SeguimientoPage() {
                     <Button
                       onClick={handleSaveActivity}
                       disabled={!activityDesc.trim() || createActividad.isPending}
-                      className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+                      className="w-full bg-unimeta-red text-white hover:bg-unimeta-red-dark"
                     >
                       {activitySuccess ? (
                         <>
-                          <Check className="h-4 w-4" /> Guardado
+                          <Check className="size-4" /> Guardado
                         </>
                       ) : createActividad.isPending ? (
-                        'Guardando...'
+                        'Guardando…'
                       ) : (
                         <>
-                          <Save className="h-4 w-4" /> Guardar actividad
+                          <Save className="size-4" /> Guardar actividad
                         </>
                       )}
                     </Button>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-sm">
+                <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+                  <CardHeader className="border-b border-slate-200/70">
+                    <CardTitle className="flex items-center justify-between text-[13px] font-semibold text-slate-900">
                       <span className="flex items-center gap-2">
-                        <CalendarClock className="h-4 w-4 text-unimeta-red" /> Actividades recientes
+                        <CalendarClock className="size-4 text-slate-400" />
+                        Actividades recientes
                       </span>
                       {actividades.length > 0 && (
                         <Button
                           variant="link"
                           size="sm"
                           onClick={() => setShowDetailModal(true)}
-                          className="h-auto p-0 text-xs text-unimeta-red"
+                          className="h-auto p-0 text-[12px] text-slate-700 hover:text-slate-900"
                         >
                           Ver todas
                         </Button>
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-5">
                     {actividadesLoading ? (
-                      <p className="text-xs text-muted-foreground text-center py-3">Cargando...</p>
+                      <p className="py-3 text-center text-[12.5px] text-slate-500">Cargando…</p>
                     ) : actividades.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-3">
+                      <p className="py-3 text-center text-[12.5px] text-slate-500">
                         Sin actividades registradas
                       </p>
                     ) : (
                       <ul className="space-y-2">
                         {actividades.slice(0, 5).map((act) => {
                           const Icon = tipoIcon(act.tipo);
+                          const t = tipoTone(act.tipo);
                           return (
                             <li
                               key={act.documentId}
                               className={cn(
-                                'p-2.5 rounded-md border-l-[3px] flex gap-2.5',
-                                tipoColor(act.tipo)
+                                'flex gap-2.5 rounded-md border-l-[3px] bg-slate-50/60 p-2.5',
+                                t.bar
                               )}
                             >
-                              <Icon className="h-4 w-4 shrink-0 mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-baseline gap-2 mb-0.5">
-                                  <strong className="text-xs font-semibold">
+                              <Icon className={cn("mt-0.5 size-4 shrink-0", t.icon)} />
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-0.5 flex items-baseline justify-between gap-2">
+                                  <strong className="text-[12px] font-semibold text-slate-900">
                                     {tipoLabel(act.tipo)}
                                   </strong>
-                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                  <span className="shrink-0 text-[10.5px] text-slate-500">
                                     {formatActivityTime(act.timestamp)}
                                   </span>
                                 </div>
                                 {act.descripcion && (
-                                  <p className="text-[11px] text-foreground/80 leading-snug">
+                                  <p className="text-[11.5px] leading-snug text-slate-600">
                                     {act.descripcion}
                                   </p>
                                 )}
@@ -586,8 +593,8 @@ export function SeguimientoPage() {
                 </Card>
               </>
             ) : (
-              <Card>
-                <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+                <CardContent className="py-12 text-center text-[13px] text-slate-500">
                   Selecciona un lead del pipeline para ver detalles, mover de etapa y registrar actividades.
                 </CardContent>
               </Card>
@@ -597,19 +604,51 @@ export function SeguimientoPage() {
       </div>
 
       {showDetailModal && selectedLead && (
-        <LeadDetailModal lead={selectedLead} onClose={() => setShowDetailModal(false)} />
+        <LeadDetailModal leadId={selectedLead.documentId} onClose={() => setShowDetailModal(false)} />
       )}
     </div>
   );
 }
 
-function stageColor(estado: string): string {
-  switch (estado) {
-    case 'nuevo': return 'blue';
-    case 'contactado': return 'orange';
-    case 'interesado': return 'emerald';
-    case 'calificado': return 'purple';
-    case 'cerrado': return 'red';
-    default: return 'slate';
-  }
+function KpiSeg({
+  label,
+  value,
+  icon,
+  accent = "default",
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  accent?: "default" | "warning" | "muted";
+}) {
+  const a =
+    accent === "warning"
+      ? { bg: "bg-rose-50", fg: "text-rose-600" }
+      : accent === "muted"
+      ? { bg: "bg-slate-100", fg: "text-slate-500" }
+      : { bg: "bg-slate-100", fg: "text-slate-700" };
+  return (
+    <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
+          {label}
+        </span>
+        <div className={cn("flex size-8 items-center justify-center rounded-md", a.bg, a.fg)}>
+          {icon}
+        </div>
+      </div>
+      <div className="text-[24px] font-semibold tracking-tight text-slate-900 tabular-nums">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="font-medium text-slate-900">{value || '—'}</dd>
+    </div>
+  );
 }

@@ -1,10 +1,39 @@
-import { useState, useEffect } from "react";
-import { PROGRAMAS, ESTADOS, FUENTES, PRIORIDADES, TIPOS_ACCION } from "../../lib/api";
-import type { Lead } from "../../lib/api";
-import type { Actividad } from "../../lib/api";
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faTimes,
+  faArrowLeft,
+  faPencilAlt,
+  faTrash,
+  faSave,
+  faHistory,
+  faPlus,
+  faPhone,
+  faEnvelope,
+  faUsers,
+  faMapMarkerAlt,
+  faExchangeAlt,
+  faStickyNote,
+  type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+  PROGRAMAS,
+  ESTADOS,
+  FUENTES,
+  PRIORIDADES,
+  TIPOS_ACCION,
+  type Lead,
+  type Actividad,
+} from "../../lib/api";
 import { useLead, useUpdateLead, useDeleteLead } from "../../hooks/useLeads";
 import { useAsesores, useCreateAsesor } from "../../hooks/useAsesores";
-import { useActividades, useCreateActividad, useUpdateActividad, useDeleteActividad } from "../../hooks/useActividades";
+import {
+  useActividades,
+  useCreateActividad,
+  useUpdateActividad,
+  useDeleteActividad,
+} from "../../hooks/useActividades";
+import { cn } from "@/lib/utils";
 
 interface LeadDetailModalProps {
   leadId: string;
@@ -31,9 +60,9 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
     asesor: "" as number | "",
   });
 
-  useEffect(() => {
-    if (lead && !formData) setFormData(lead);
-  }, [lead]);
+  if (lead && !formData) {
+    setFormData(lead);
+  }
 
   const getAsesorDisplayValue = (asesor: Lead["asesor"]) => {
     if (!asesor) return "";
@@ -57,9 +86,7 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
     }
     updateLead.mutate(
       { id: leadId, data: dataToSave },
-      {
-        onSuccess: () => setIsEditing(false),
-      },
+      { onSuccess: () => setIsEditing(false) },
     );
   };
 
@@ -83,14 +110,7 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
             asesor: activityData.asesor ? Number(activityData.asesor) : undefined,
           },
         },
-        {
-          onError: (err) => console.error("🐼 ~ updateActividad error:", err),
-          onSuccess: () => {
-            setActivityData({ tipo: "llamada", descripcion: "", asesor: "" });
-            setShowActivityForm(false);
-            setEditingActivityId(null);
-          },
-        },
+        { onSuccess: () => closeActivityForm() },
       );
     } else {
       createActividad.mutate(
@@ -98,15 +118,10 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
           lead: lead!.id,
           tipo: activityData.tipo,
           descripcion: activityData.descripcion,
-          asesor: activityData.asesor ? Number(activityData.asesor) : undefined,
           timestamp: new Date().toISOString(),
+          asesor: activityData.asesor ? Number(activityData.asesor) : undefined,
         },
-        {
-          onSuccess: () => {
-            setActivityData({ tipo: "llamada", descripcion: "", asesor: "" });
-            setShowActivityForm(false);
-          },
-        },
+        { onSuccess: () => closeActivityForm() },
       );
     }
   };
@@ -114,7 +129,7 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
   const handleDeleteActivity = (documentId: string) => {
     if (confirm("¿Eliminar esta actividad?")) {
       deleteActividad.mutate(documentId, {
-        onError: (err) => console.error("🐼 ~ deleteActividad error:", err),
+        onError: (err) => console.error("deleteActividad error:", err),
       });
     }
   };
@@ -140,20 +155,25 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
     setActivityData({ tipo: "llamada", descripcion: "", asesor: "" });
   };
 
-  const getActivityIcon = (tipo: string) => {
+  const getActivityIcon = (tipo: string): IconDefinition => {
     switch (tipo) {
-      case "llamada":
-        return "fa-phone";
-      case "correo":
-        return "fa-envelope";
-      case "reunion":
-        return "fa-users";
-      case "visita":
-        return "fa-map-marker";
-      case "cambio_estado":
-        return "fa-exchange-alt";
-      default:
-        return "fa-sticky-note";
+      case "llamada": return faPhone;
+      case "correo": return faEnvelope;
+      case "reunion": return faUsers;
+      case "visita": return faMapMarkerAlt;
+      case "cambio_estado": return faExchangeAlt;
+      default: return faStickyNote;
+    }
+  };
+
+  const activityTone = (tipo: string) => {
+    switch (tipo) {
+      case "llamada": return { bar: "border-l-blue-500", icon: "text-blue-600", bg: "bg-blue-50" };
+      case "correo": return { bar: "border-l-amber-500", icon: "text-amber-600", bg: "bg-amber-50" };
+      case "reunion": return { bar: "border-l-emerald-500", icon: "text-emerald-600", bg: "bg-emerald-50" };
+      case "visita": return { bar: "border-l-violet-500", icon: "text-violet-600", bg: "bg-violet-50" };
+      case "cambio_estado": return { bar: "border-l-slate-700", icon: "text-slate-700", bg: "bg-slate-100" };
+      default: return { bar: "border-l-slate-400", icon: "text-slate-500", bg: "bg-slate-50" };
     }
   };
 
@@ -168,206 +188,201 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
   };
 
   const getAvatarColor = (nombre: string) => {
-    const colors = ["#4a90d9", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6"];
+    const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
     return colors[nombre.charCodeAt(0) % colors.length];
   };
 
-  if (isLoading)
-    return (
-      <div className="lead-create-modal">
-        <div className="lead-modal-overlay" onClick={onClose}></div>
-        <div className="lead-modal-content lead-modal-content-wide">
-          <div className="lead-modal-body">
-            <p>Cargando...</p>
-          </div>
-        </div>
-      </div>
-    );
+  const inputCls =
+    "flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+  const selectCls = inputCls;
+  const labelCls = "text-[12px] font-medium text-slate-700";
 
-  if (error || !lead)
+  if (isLoading || error || !lead) {
     return (
-      <div className="lead-create-modal">
-        <div className="lead-modal-overlay" onClick={onClose}></div>
-        <div className="lead-modal-content lead-modal-content-wide">
-          <div className="lead-modal-body">
-            <p>Error cargando lead</p>
-          </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div className="rounded-xl border border-slate-200/70 bg-white p-8 shadow-xl">
+          <p className="text-[13px] text-slate-500">
+            {isLoading ? "Cargando…" : "Error cargando lead"}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-4 inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-slate-900 px-4 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800"
+          >
+            Cerrar
+          </button>
         </div>
       </div>
     );
+  }
 
   return (
-    <div className="lead-create-modal">
-      <div className="lead-modal-overlay" onClick={onClose}></div>
-      <div className="lead-modal-content lead-modal-content-wide">
-        <div className="lead-modal-header">
-          <h2>Detalle del Lead</h2>
-          <button className="lead-modal-close" onClick={onClose}>
-            <i className="fas fa-times"></i>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/70 px-6 py-4">
+          <div>
+            <h2 className="text-[16px] font-semibold tracking-tight text-slate-900">
+              Detalle del lead
+            </h2>
+            <p className="mt-0.5 text-[12.5px] text-slate-500">
+              Edita, registra actividades y consulta la trazabilidad.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Cerrar"
+          >
+            <FontAwesomeIcon icon={faTimes} />
           </button>
         </div>
-        <div className="lead-modal-body">
-          <button className="btn-back-to-list" onClick={onClose}>
-            <i className="fas fa-arrow-left"></i> Volver al listado
-          </button>
-          <div className="leads-container">
-            <div className="lead-info-panel">
-              <div className="lead-avatar-section">
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div className="border-b border-slate-200/70 p-6 lg:border-b-0 lg:border-r">
+              <div className="mb-6 flex items-center gap-4">
                 <div
-                  className="lead-avatar-large"
+                  className="flex size-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-white"
                   style={{ background: getAvatarColor(lead.nombres) }}
                 >
                   {lead.nombres?.charAt(0)}
                   {lead.apellidos?.charAt(0)}
                 </div>
-                <div className="lead-name-display">
-                  {lead.nombres} {lead.apellidos}
-                </div>
-                <div className="lead-program-display">{lead.programa}</div>
-                <div className="meta-chip-group">
-                  <span className="meta-chip">{lead.estado}</span>
-                  <span className="meta-chip">{lead.prioridad || "media"}</span>
+                <div className="min-w-0">
+                  <div className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
+                    {lead.nombres} {lead.apellidos}
+                  </div>
+                  <div className="mt-0.5 truncate text-[12.5px] text-slate-500">
+                    {lead.programa}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      {lead.estado}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/15">
+                      {lead.prioridad || "media"}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <form>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label">Nombres</label>
+
+              <form onSubmit={(e) => e.preventDefault()}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Nombres</label>
                     <input
                       type="text"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.nombres || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, nombres: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, nombres: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Apellidos</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Apellidos</label>
                     <input
                       type="text"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.apellidos || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, apellidos: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, apellidos: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Programa</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Programa</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={formData?.programa || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, programa: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, programa: e.target.value })}
                     >
                       {PROGRAMAS.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
+                        <option key={p} value={p}>{p}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Estado</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Estado</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={formData?.estado || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, estado: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, estado: e.target.value })}
                     >
                       {ESTADOS.map((e) => (
-                        <option key={e} value={e}>
-                          {e}
-                        </option>
+                        <option key={e} value={e}>{e}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Cedula</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Cedula</label>
                     <input
                       type="text"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.cedula || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, cedula: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, cedula: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Celular</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Celular</label>
                     <input
                       type="tel"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.celular || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, celular: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, celular: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Correo</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Correo</label>
                     <input
                       type="email"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.correo || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, correo: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, correo: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Ciudad</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Ciudad</label>
                     <input
                       type="text"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.ciudad || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, ciudad: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, ciudad: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Fuente</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Fuente</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={formData?.fuente || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, fuente: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, fuente: e.target.value })}
                     >
                       {FUENTES.map((f) => (
-                        <option key={f} value={f}>
-                          {f}
-                        </option>
+                        <option key={f} value={f}>{f}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Asesor</label>
-                    {asesoresLoading ?
-                      <span className="form-hint-inline">Cargando asesores...</span>
-                    : asesores.length === 0 ?
-                      <div className="form-hint-inline">
-                        <span>No hay asesores registrados.</span>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Asesor</label>
+                    {asesoresLoading ? (
+                      <span className="text-[12px] text-slate-500">Cargando asesores…</span>
+                    ) : asesores.length === 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[12px] text-slate-500">No hay asesores registrados.</span>
                         <AsesorQuickCreate
                           onCreated={(a) => setFormData({ ...formData!, asesor: a.id })}
                         />
                       </div>
-                    : <>
+                    ) : (
+                      <div className="flex flex-col gap-2">
                         <select
-                          className="form-input"
+                          className={selectCls}
                           value={getAsesorDisplayValue(formData?.asesor || null) || ""}
                           disabled={!isEditing}
                           onChange={(e) =>
@@ -379,68 +394,56 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
                         >
                           <option value="">Sin asignar</option>
                           {asesores.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.nombre}
-                            </option>
+                            <option key={a.id} value={a.id}>{a.nombre}</option>
                           ))}
                         </select>
                         <AsesorQuickCreate
                           onCreated={(a) => setFormData({ ...formData!, asesor: a.id })}
                         />
-                      </>
-                    }
+                      </div>
+                    )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Prioridad</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Prioridad</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={formData?.prioridad || "media"}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, prioridad: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, prioridad: e.target.value })}
                     >
                       {PRIORIDADES.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
+                        <option key={p} value={p}>{p}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Ultimo contacto</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Ultimo contacto</label>
                     <input
                       type="date"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.fecha_ultimo_contacto || ""}
                       disabled={!isEditing}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData!,
-                          fecha_ultimo_contacto: e.target.value,
-                        })
+                        setFormData({ ...formData!, fecha_ultimo_contacto: e.target.value })
                       }
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Proxima accion</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Proxima accion</label>
                     <input
                       type="date"
-                      className="form-input"
+                      className={inputCls}
                       value={formData?.fecha_proxima_accion || ""}
                       disabled={!isEditing}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData!,
-                          fecha_proxima_accion: e.target.value,
-                        })
+                        setFormData({ ...formData!, fecha_proxima_accion: e.target.value })
                       }
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Tipo proxima accion</label>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className={labelCls}>Tipo proxima accion</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={formData?.tipo_proxima_accion || ""}
                       disabled={!isEditing}
                       onChange={(e) =>
@@ -449,112 +452,109 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
                     >
                       <option value="">Sin accion</option>
                       {TIPOS_ACCION.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
+                        <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="form-group form-group-full">
-                    <label className="form-label">Notas</label>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className={labelCls}>Notas</label>
                     <textarea
-                      className="form-input form-textarea"
-                      rows={4}
+                      className={cn(inputCls, "min-h-[96px] resize-y")}
                       value={formData?.notas || ""}
                       disabled={!isEditing}
-                      onChange={(e) =>
-                        setFormData({ ...formData!, notas: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData!, notas: e.target.value })}
                     />
                   </div>
                 </div>
-                <div className="form-actions">
-                  {!isEditing ?
+
+                <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200/70 pt-5">
+                  {!isEditing ? (
                     <>
                       <button
                         type="button"
-                        className="btn btn-edit"
+                        onClick={onClose}
+                        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3.5 text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        <FontAwesomeIcon icon={faArrowLeft} className="text-[10px]" />
+                        Volver
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3.5 text-[12.5px] font-medium text-slate-700 transition-colors hover:border-rose-300 hover:text-rose-700"
+                      >
+                        <FontAwesomeIcon icon={faTrash} className="text-[11px]" />
+                        Eliminar
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
                           setIsEditing(true);
                           setFormData(lead);
                         }}
+                        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-slate-900 px-3.5 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800"
                       >
-                        <i className="fas fa-pencil-alt"></i> Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={handleDelete}
-                      >
-                        <i className="fas fa-trash"></i> Eliminar
+                        <FontAwesomeIcon icon={faPencilAlt} className="text-[11px]" />
+                        Editar
                       </button>
                     </>
-                  : <>
+                  ) : (
+                    <>
                       <button
                         type="button"
-                        className="btn btn-primary"
-                        onClick={handleSave}
-                        disabled={updateLead.isPending}
-                      >
-                        <i className="fas fa-save"></i>{" "}
-                        {updateLead.isPending ? "Guardando..." : "Guardar"}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
                         onClick={() => {
                           setIsEditing(false);
                           setFormData(lead);
                         }}
+                        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3.5 text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
                       >
                         Cancelar
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={updateLead.isPending}
+                        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-unimeta-red px-3.5 text-[12.5px] font-medium text-white transition-colors hover:bg-unimeta-red-dark disabled:opacity-50"
+                      >
+                        <FontAwesomeIcon icon={faSave} className="text-[11px]" />
+                        {updateLead.isPending ? "Guardando…" : "Guardar"}
+                      </button>
                     </>
-                  }
+                  )}
                 </div>
               </form>
             </div>
-            <div className="lead-timeline">
-              <div className="timeline-header">
-                <h2>
-                  <i className="fas fa-history"></i> Trazabilidad
-                </h2>
-                <p>Resumen operativo y cronologia del lead.</p>
-              </div>
-              <div className="timeline-summary-grid">
-                <article className="summary-mini-card">
-                  <span>Fuente</span>
-                  <strong>{formData?.fuente || "Sin fuente"}</strong>
-                </article>
-                <article className="summary-mini-card">
-                  <span>Asesor</span>
-                  <strong>{getAsesorDisplayName(formData?.asesor || null)}</strong>
-                </article>
-                <article className="summary-mini-card">
-                  <span>Prioridad</span>
-                  <strong>{formData?.prioridad || "Media"}</strong>
-                </article>
-                <article className="summary-mini-card">
-                  <span>Proxima accion</span>
-                  <strong>
-                    {formData?.fecha_proxima_accion || "Sin proxima accion"}
-                  </strong>
-                </article>
+
+            <div className="p-6">
+              <div className="mb-5 flex items-center gap-2">
+                <FontAwesomeIcon icon={faHistory} className="text-slate-500" />
+                <h3 className="text-[14px] font-semibold tracking-tight text-slate-900">
+                  Trazabilidad
+                </h3>
               </div>
 
-              {showActivityForm ?
-                <div className="activity-form">
-                  <h4>{editingActivityId ? "Editar actividad" : "Registrar actividad"}</h4>
-                  <div className="form-group">
-                    <label className="form-label">Tipo</label>
+              <div className="mb-5 grid grid-cols-2 gap-3">
+                <SummaryMini label="Fuente" value={formData?.fuente || "Sin fuente"} />
+                <SummaryMini label="Asesor" value={getAsesorDisplayName(formData?.asesor || null)} />
+                <SummaryMini label="Prioridad" value={formData?.prioridad || "Media"} />
+                <SummaryMini
+                  label="Proxima accion"
+                  value={formData?.fecha_proxima_accion || "Sin proxima accion"}
+                />
+              </div>
+
+              {showActivityForm ? (
+                <div className="mb-5 space-y-4 rounded-lg border border-slate-200/70 bg-slate-50/50 p-4">
+                  <h4 className="text-[12.5px] font-semibold uppercase tracking-wide text-slate-700">
+                    {editingActivityId ? "Editar actividad" : "Registrar actividad"}
+                  </h4>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Tipo</label>
                     <select
-                      className="form-input"
+                      className={selectCls}
                       value={activityData.tipo}
                       onChange={(e) =>
-                        setActivityData({
-                          ...activityData,
-                          tipo: e.target.value as Actividad["tipo"],
-                        })
+                        setActivityData({ ...activityData, tipo: e.target.value as Actividad["tipo"] })
                       }
                     >
                       <option value="llamada">Llamada</option>
@@ -564,23 +564,21 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
                       <option value="nota">Nota</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Descripcion</label>
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Descripcion</label>
                     <textarea
-                      className="form-input form-textarea"
-                      rows={3}
+                      className={cn(inputCls, "min-h-[72px] resize-y")}
                       value={activityData.descripcion}
-                      onChange={(e) =>
-                        setActivityData({ ...activityData, descripcion: e.target.value })
-                      }
+                      onChange={(e) => setActivityData({ ...activityData, descripcion: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Asesor (opcional)</label>
-                    {asesoresLoading ?
-                      <span className="form-hint-inline">Cargando...</span>
-                    : <select
-                        className="form-input"
+                  <div className="space-y-1.5">
+                    <label className={labelCls}>Asesor (opcional)</label>
+                    {asesoresLoading ? (
+                      <span className="text-[12px] text-slate-500">Cargando…</span>
+                    ) : (
+                      <select
+                        className={selectCls}
                         value={activityData.asesor}
                         onChange={(e) =>
                           setActivityData({
@@ -591,82 +589,108 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
                       >
                         <option value="">No asignado</option>
                         {asesores.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.nombre}
-                          </option>
+                          <option key={a.id} value={a.id}>{a.nombre}</option>
                         ))}
                       </select>
-                    }
+                    )}
                   </div>
-                  <div className="form-actions">
+                  <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      onClick={handleCreateActivity}
-                      disabled={createActividad.isPending || updateActividad.isPending}
-                    >
-                      <i className="fas fa-save"></i>{" "}
-                      {createActividad.isPending || updateActividad.isPending ? "Guardando..." : "Guardar"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
                       onClick={closeActivityForm}
+                      className="inline-flex h-9 cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3.5 text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
                     >
                       Cancelar
                     </button>
+                    <button
+                      type="button"
+                      onClick={handleCreateActivity}
+                      disabled={createActividad.isPending || updateActividad.isPending}
+                      className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-slate-900 px-3.5 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      <FontAwesomeIcon icon={faSave} className="text-[11px]" />
+                      {createActividad.isPending || updateActividad.isPending ? "Guardando…" : "Guardar"}
+                    </button>
                   </div>
                 </div>
-              : <button
+              ) : (
+                <button
                   type="button"
-                  className="btn btn-primary add-activity-btn"
                   onClick={() => setShowActivityForm(true)}
+                  className="mb-5 inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 bg-white text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
                 >
-                  <i className="fas fa-plus"></i> Registrar actividad
+                  <FontAwesomeIcon icon={faPlus} className="text-[11px]" />
+                  Registrar actividad
                 </button>
-              }
+              )}
 
-              <div className="timeline-list">
-                {actividades.length === 0 ?
-                  <p className="timeline-empty">Sin actividad registrada</p>
-                : actividades.map((act) => (
-                    <div key={act.id} className="activity-item">
-                      <div className="activity-icon">
-                        <i className={`fas ${getActivityIcon(act.tipo)}`}></i>
-                      </div>
-                      <div className="activity-content">
-                        <p className="activity-desc">{act.descripcion}</p>
-                        <span className="activity-meta">
-                          {(act.asesor && typeof act.asesor === "object" ? act.asesor.nombre : "Sin asesor")} -{" "}
-                          {formatTimestamp(act.timestamp)}
-                        </span>
-                      </div>
-                      <div className="activity-actions">
-                        <button
-                          type="button"
-                          className="btn-icon-sm"
-                          onClick={() => openEditActivityForm(act)}
-                          title="Editar"
-                        >
-                          <i className="fas fa-pencil-alt"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon-sm btn-danger-sm"
-                          onClick={() => handleDeleteActivity(act.documentId)}
-                          title="Eliminar"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
+              <ul className="space-y-2">
+                {actividades.length === 0 ? (
+                  <li className="rounded-lg border border-dashed border-slate-200/70 py-8 text-center text-[12.5px] text-slate-500">
+                    Sin actividad registrada
+                  </li>
+                ) : (
+                  actividades.map((act) => {
+                    const t = activityTone(act.tipo);
+                    return (
+                      <li
+                        key={act.id}
+                        className={cn(
+                          "flex items-start gap-2.5 rounded-md border-l-[3px] p-3",
+                          t.bar,
+                          t.bg
+                        )}
+                      >
+                        <FontAwesomeIcon
+                          icon={getActivityIcon(act.tipo)}
+                          className={cn("mt-0.5 size-3.5 shrink-0", t.icon)}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="m-0 text-[12.5px] leading-snug text-slate-700">
+                            {act.descripcion}
+                          </p>
+                          <span className="mt-1 block text-[10.5px] text-slate-500">
+                            {(act.asesor && typeof act.asesor === "object" ? act.asesor.nombre : "Sin asesor")} · {formatTimestamp(act.timestamp)}
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditActivityForm(act)}
+                            className="flex size-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
+                            title="Editar"
+                          >
+                            <FontAwesomeIcon icon={faPencilAlt} className="text-[11px]" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteActivity(act.documentId)}
+                            className="flex size-7 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-rose-600"
+                            title="Eliminar"
+                          >
+                            <FontAwesomeIcon icon={faTrash} className="text-[11px]" />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SummaryMini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200/70 bg-slate-50/50 p-3">
+      <span className="block text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      <strong className="mt-1 block truncate text-[12.5px] text-slate-900">{value}</strong>
     </div>
   );
 }
@@ -697,17 +721,22 @@ function AsesorQuickCreate({
 
   if (!open) {
     return (
-      <button type="button" className="btn-link-inline" onClick={() => setOpen(true)}>
-        <i className="fas fa-plus"></i> Crear asesor
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex h-7 cursor-pointer items-center gap-1.5 self-start rounded-md px-2 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100"
+      >
+        <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+        Crear asesor
       </button>
     );
   }
 
   return (
-    <div className="asesor-quick-create">
+    <div className="flex flex-wrap items-center gap-2">
       <input
         type="text"
-        className="form-input"
+        className="h-9 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 text-[12.5px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
         placeholder="Nombre del asesor"
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
@@ -721,19 +750,19 @@ function AsesorQuickCreate({
       />
       <button
         type="button"
-        className="btn btn-primary"
         onClick={submit}
         disabled={!nombre.trim() || createAsesor.isPending}
+        className="inline-flex h-9 cursor-pointer items-center rounded-md bg-slate-900 px-3 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
       >
-        {createAsesor.isPending ? "Creando..." : "Guardar"}
+        {createAsesor.isPending ? "Creando…" : "Guardar"}
       </button>
       <button
         type="button"
-        className="btn btn-secondary"
         onClick={() => {
           setOpen(false);
           setNombre("");
         }}
+        className="inline-flex h-9 cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50"
       >
         Cancelar
       </button>

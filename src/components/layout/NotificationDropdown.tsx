@@ -1,10 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Bell, Clock, Calendar, CircleCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useNotificaciones, type Notificacion, type NotificacionUrgencia } from '@/hooks/useNotificaciones';
+import { useNotificaciones, type NotificacionUrgencia } from '@/hooks/useNotificaciones';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -40,33 +39,33 @@ export function NotificationDropdown({ onClose }: Props) {
   const navigate = useNavigate();
   const { notificaciones, countVencidos, countHoy } = useNotificaciones();
 
-  const handleClickNotif = (notif: Notificacion) => {
+  const handleClickNotif = () => {
     onClose();
     navigate({ to: '/seguimiento' });
   };
 
   return (
     <div
-      className="absolute top-full right-0 mt-2 w-[380px] max-h-[540px] bg-popover text-popover-foreground rounded-xl shadow-2xl border border-border z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+      className="absolute top-full right-0 mt-2 w-[400px] max-h-[560px] bg-popover text-popover-foreground rounded-xl shadow-xl ring-1 ring-slate-900/5 z-50 flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between items-center px-4 py-3 border-b border-border bg-muted/30">
-        <h3 className="text-sm font-semibold">Notificaciones</h3>
+      <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-200/70">
+        <h3 className="text-[14px] font-semibold tracking-tight text-slate-900">Notificaciones</h3>
         <Badge variant="secondary" className="rounded-full">
           {notificaciones.length}
         </Badge>
       </div>
 
       {notificaciones.length === 0 ? (
-        <div className="px-5 py-10 text-center text-muted-foreground">
-          <CircleCheck className="h-10 w-10 mx-auto text-emerald-500 mb-2" />
-          <p className="text-sm font-medium text-foreground">No hay actividades pendientes</p>
+        <div className="px-6 py-12 text-center text-muted-foreground">
+          <CircleCheck className="h-10 w-10 mx-auto text-emerald-500 mb-3" />
+          <p className="text-sm font-semibold text-foreground">No hay actividades pendientes</p>
           <span className="text-xs">Estás al día con todos los seguimientos</span>
         </div>
       ) : (
         <>
           {countVencidos > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-destructive/10 text-destructive border-b border-border">
+            <div className="flex items-center gap-2 px-5 py-2 text-[12.5px] font-medium bg-rose-50 text-rose-700 border-b border-slate-200/70">
               <Bell className="h-3.5 w-3.5" />
               <span>
                 {countVencidos} {countVencidos === 1 ? 'vencido' : 'vencidos'}
@@ -74,38 +73,38 @@ export function NotificationDropdown({ onClose }: Props) {
             </div>
           )}
           {countHoy > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-orange-50 text-orange-700 border-b border-border">
+            <div className="flex items-center gap-2 px-5 py-2 text-[12.5px] font-medium bg-amber-50 text-amber-700 border-b border-slate-200/70">
               <Clock className="h-3.5 w-3.5" />
               <span>{countHoy} para hoy</span>
             </div>
           )}
 
-          <ScrollArea className="flex-1 max-h-[380px]">
-            <ul className="divide-y divide-border">
+          <ScrollArea className="flex-1 max-h-[400px]">
+            <ul className="divide-y divide-slate-100">
               {notificaciones.map((notif) => {
                 const meta = URGENCIA_META[notif.urgencia];
                 return (
                   <li
                     key={notif.id}
-                    onClick={() => handleClickNotif(notif)}
+                    onClick={() => handleClickNotif()}
                     className={cn(
-                      'flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 border-l-[3px]',
+                      'flex gap-3 px-5 py-3.5 cursor-pointer transition-colors hover:bg-slate-50 border-l-[3px]',
                       meta.className.split(' ')[0]
                     )}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline gap-2 mb-0.5">
-                        <strong className="text-sm font-semibold text-foreground truncate">
+                        <strong className="text-[13.5px] font-semibold text-slate-900 truncate">
                           {notif.lead.nombres} {notif.lead.apellidos}
                         </strong>
-                        <Badge variant="outline" className="text-[10px] uppercase font-semibold shrink-0">
+                        <Badge variant="outline" className="text-[10px] uppercase font-semibold shrink-0 tracking-wide">
                           {meta.label}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1.5">
+                      <p className="text-[12px] text-slate-500 mb-2">
                         {notif.lead.programa} · {notif.lead.ciudad}
                       </p>
-                      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                      <div className="flex justify-between items-center text-[11px] text-slate-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatFecha(notif.fechaProximaAccion)}
@@ -122,7 +121,7 @@ export function NotificationDropdown({ onClose }: Props) {
           </ScrollArea>
 
           <Separator />
-          <div className="px-4 py-2 bg-muted/30 text-center text-[11px] text-muted-foreground">
+          <div className="px-5 py-2.5 text-center text-[11.5px] text-slate-500">
             Mostrando {notificaciones.length} {notificaciones.length === 1 ? 'alerta' : 'alertas'}
           </div>
         </>

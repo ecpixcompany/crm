@@ -18,7 +18,7 @@ export function flattenList<T extends { id: number }>(items: (StrapiItem<T> | T)
 
 function cleanPayload(data: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(data).filter(([_, value]) => {
+    Object.entries(data).filter(([, value]) => {
       if (value === null || typeof value === 'number' || typeof value === 'boolean') {
         return true;
       }
@@ -203,8 +203,9 @@ export async function fetchLead(documentId: string): Promise<Lead> {
 }
 
 export async function createLead(input: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> {
-  const { documentId, ...rest } = input as Record<string, unknown>;
-  let data: Record<string, unknown> = { ...rest };
+  const rest = { ...(input as Record<string, unknown>) };
+  delete rest.documentId;
+  let data: Record<string, unknown> = rest;
   if (input.asesor) {
     const asesor = input.asesor as Asesor;
     data.asesor = typeof asesor === 'object' ? asesor.id : asesor;
@@ -382,8 +383,10 @@ export async function createActividad(input: {
 }
 
 export async function updateActividad(documentId: string, input: Partial<Actividad>): Promise<Actividad> {
-  const { id, documentId: _docId, ...rest } = input as Record<string, unknown>;
-  const data: Record<string, unknown> = { ...rest };
+  const rest = { ...(input as Record<string, unknown>) };
+  delete rest.id;
+  delete rest.documentId;
+  const data: Record<string, unknown> = rest;
   if (input.asesor !== undefined) {
     if (input.asesor === null) {
       data.asesor = null;

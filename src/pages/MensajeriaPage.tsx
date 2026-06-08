@@ -1,10 +1,29 @@
 import { useEffect, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faEnvelope,
+  faCommentSms,
+  faComment,
+  faComments,
+  faClock,
+  faStopwatch,
+  faUserCheck,
+  faSearch,
+  faPhone,
+  faEllipsisV,
+  faSpinner,
+  faCommentDots,
+  faPaperclip,
+  faPaperPlane,
+  type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
+import { faWhatsapp as faWhatsappBrand } from "@fortawesome/free-brands-svg-icons";
 import { useConversaciones, useConversacion } from "../hooks/useConversaciones";
 import { useCreateMensaje, useMensajes } from "../hooks/useMensajes";
 import { useConfiguracionAiByLead, useCreateConfiguracionAi, useUpdateConfiguracionAi } from "../hooks/useConfiguracionAi";
 import type { Lead } from "../lib/api";
 import { sendMessageViaN8N, MODELOS_AI } from "../lib/api";
-import "./MensajeriaPage.css";
+import { cn } from "@/lib/utils";
 
 export function MensajeriaPage() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -24,15 +43,14 @@ export function MensajeriaPage() {
   const { data: configAi } = useConfiguracionAiByLead(convActual?.lead?.documentId);
   const createConfigAi = useCreateConfiguracionAi();
   const updateConfigAi = useUpdateConfiguracionAi();
-  const [promptDraft, setPromptDraft] = useState("");
-  const [notasDraft, setNotasDraft] = useState("");
-
-  useEffect(() => {
-    if (configAi) {
-      setPromptDraft(configAi.prompt_custom || "");
-      setNotasDraft(configAi.notas_ai || "");
-    }
-  }, [configAi?.documentId]);
+  const [promptDraft, setPromptDraft] = useState(() => configAi?.prompt_custom || "");
+  const [notasDraft, setNotasDraft] = useState(() => configAi?.notas_ai || "");
+  const [lastDocId, setLastDocId] = useState(configAi?.documentId);
+  if (configAi?.documentId !== lastDocId) {
+    setLastDocId(configAi?.documentId);
+    setPromptDraft(configAi?.prompt_custom || "");
+    setNotasDraft(configAi?.notas_ai || "");
+  }
 
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,16 +139,16 @@ export function MensajeriaPage() {
     return date.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
   };
 
-  const getCanalIcon = (canal: string) => {
+  const getCanalIcon = (canal: string): IconDefinition => {
     switch (canal) {
       case "whatsapp":
-        return "fab fa-whatsapp";
+        return faWhatsappBrand;
       case "email":
-        return "fas fa-envelope";
+        return faEnvelope;
       case "sms":
-        return "fas fa-comment-sms";
+        return faCommentSms;
       default:
-        return "fas fa-comment";
+        return faComment;
     }
   };
 
@@ -143,7 +161,7 @@ export function MensajeriaPage() {
       .slice(0, 2);
 
   const getAvatarColor = (nombre: string) => {
-    const colors = ["#4a90d9", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6"];
+    const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
     return colors[nombre.charCodeAt(0) % colors.length];
   };
 
@@ -155,96 +173,86 @@ export function MensajeriaPage() {
   };
 
   return (
-    <div>
-      <section className="page-intro-card">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2>Bandeja unificada lista para enlazar con Strapi</h2>
-          <p>
-            La mensajeria ya queda conectada al lead y a la trazabilidad, aunque hoy
-            funcione con datos locales.
+          <h2 className="text-[22px] font-semibold tracking-tight text-slate-900">
+            Mensajeria
+          </h2>
+          <p className="mt-1 text-[13.5px] text-slate-500">
+            Bandeja unificada lista para enlazar con Strapi · WhatsApp first
           </p>
         </div>
-        <div className="intro-chip-group">
-          <span className="intro-chip">WhatsApp first</span>
-        </div>
-      </section>
-
-      <div className="kpi-container">
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Conversaciones activas</span>
-            <span className="kpi-icon">
-              <i className="fas fa-comments"></i>
-            </span>
-          </div>
-          <div className="kpi-value">{activeConversations.length}</div>
-          <div className="kpi-change">Bandeja consolidada</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Sin respuesta</span>
-            <span className="kpi-icon">
-              <i className="fas fa-clock"></i>
-            </span>
-          </div>
-          <div className="kpi-value">{pendingCount}</div>
-          <div className="kpi-change negative">Pendientes de atencion</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Tiempo promedio</span>
-            <span className="kpi-icon">
-              <i className="fas fa-stopwatch"></i>
-            </span>
-          </div>
-          <div className="kpi-value">--</div>
-          <div className="kpi-change">Medicion operativa</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Conversion estimada</span>
-            <span className="kpi-icon">
-              <i className="fas fa-user-check"></i>
-            </span>
-          </div>
-          <div className="kpi-value">--</div>
-          <div className="kpi-change">Calificados y matriculados</div>
-        </div>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          WhatsApp conectado
+        </span>
       </div>
 
-      <div className="messaging-layout">
-        <section className="messaging-sidebar-panel">
-          <div className="messaging-panel-header">
-            <div>
-              <h2>
-                <i className="fab fa-whatsapp"></i> Bandeja de conversaciones
-              </h2>
-              <p>
-                Busca por lead, programa, ciudad o tema para trabajar la operacion
-                comercial.
-              </p>
-            </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiMensajeria
+          label="Conversaciones activas"
+          value={activeConversations.length}
+          icon={<FontAwesomeIcon icon={faComments} className="size-4" />}
+          accent="default"
+        />
+        <KpiMensajeria
+          label="Sin respuesta"
+          value={pendingCount}
+          icon={<FontAwesomeIcon icon={faClock} className="size-4" />}
+          accent={pendingCount > 0 ? "warning" : "default"}
+        />
+        <KpiMensajeria
+          label="Tiempo promedio"
+          value="—"
+          icon={<FontAwesomeIcon icon={faStopwatch} className="size-4" />}
+          accent="default"
+        />
+        <KpiMensajeria
+          label="Conversion estimada"
+          value="—"
+          icon={<FontAwesomeIcon icon={faUserCheck} className="size-4" />}
+          accent="default"
+        />
+      </div>
+
+      <div className="grid min-h-[560px] grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)_300px]">
+        <section className="flex flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+          <div className="border-b border-slate-200/70 p-5">
+            <h3 className="text-[14px] font-semibold tracking-tight text-slate-900">
+              <FontAwesomeIcon
+                icon={faWhatsappBrand}
+                className="mr-2 text-emerald-500"
+              />
+              Conversaciones
+            </h3>
+            <p className="mt-1 text-[12.5px] text-slate-500">
+              Busca por lead, programa o ciudad.
+            </p>
           </div>
 
-          <div className="messaging-search">
-            <i className="fas fa-search"></i>
+          <div className="flex items-center gap-2.5 border-b border-slate-200/70 bg-slate-50/40 px-4 py-3">
+            <FontAwesomeIcon icon={faSearch} className="text-slate-400" />
             <input
               id="messagingSearchInput"
               type="text"
-              placeholder="Buscar por nombre, programa, ciudad o etiqueta"
+              placeholder="Buscar…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 border-none bg-transparent text-[13px] text-slate-900 outline-none placeholder:text-slate-400"
             />
           </div>
 
-          <div className="messaging-tabs">
+          <div className="flex gap-1.5 border-b border-slate-200/70 px-4 py-2.5">
             {(["todos", "nuevos", "seguimiento", "sin-respuesta"] as const).map((tab) => (
               <button
                 key={tab}
-                className={`messaging-tab ${tabFilter === tab ? "active" : ""}`}
+                className={cn(
+                  "rounded-full border-none px-3 py-1 text-[12px] font-medium transition-colors",
+                  tabFilter === tab
+                    ? "bg-slate-900 text-white"
+                    : "bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                )}
                 onClick={() => setTabFilter(tab)}
               >
                 {tab === "todos" ?
@@ -258,49 +266,60 @@ export function MensajeriaPage() {
             ))}
           </div>
 
-          <div className="conversation-list">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ?
-              <p className="no-conversations">Cargando...</p>
+              <p className="px-6 py-8 text-center text-[13px] text-slate-500">Cargando…</p>
             : filteredConversaciones.length === 0 ?
-              <p className="no-conversations">
+              <p className="px-6 py-8 text-center text-[13px] text-slate-500">
                 {searchTerm || tabFilter !== "todos" ?
-                  "No hay conversaciones que coincidan"
-                : "No hay conversaciones aún. n8n creará una cuando llegue el primer mensaje por WhatsApp."
-                }
+                  "Sin resultados"
+                : "Sin conversaciones aún"}
               </p>
             : filteredConversaciones.map((conv) => {
                 const nombreLead =
                   conv.lead ? `${conv.lead.nombres} ${conv.lead.apellidos}` : "Sin lead";
+                const isActive = selectedDocumentId === conv.documentId;
                 return (
                   <div
                     key={conv.documentId}
-                    className={`conversation-item ${selectedDocumentId === conv.documentId ? "active" : ""}`}
+                    className={cn(
+                      "flex cursor-pointer gap-3 border-b border-slate-100 px-4 py-3.5 transition-colors",
+                      isActive
+                        ? "border-l-[3px] border-l-slate-900 bg-slate-50"
+                        : "hover:bg-slate-50/60"
+                    )}
                     onClick={() => setSelectedDocumentId(conv.documentId)}
                   >
                     <div
-                      className="conversation-avatar"
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white"
                       style={{ background: getAvatarColor(nombreLead) }}
                     >
                       {getInitials(nombreLead)}
                     </div>
-                    <div className="conversation-info">
-                      <div className="conversation-header-row">
-                        <span className="conversation-name">{nombreLead}</span>
-                        <span className="conversation-time">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-0.5 flex items-center justify-between">
+                        <span className="truncate text-[13px] font-semibold text-slate-900">
+                          {nombreLead}
+                        </span>
+                        <span className="shrink-0 text-[11.5px] text-slate-400">
                           {formatRelativeTime(conv.ultimo_mensaje_at || conv.createdAt)}
                         </span>
                       </div>
-                      <p className="conversation-preview">
+                      <p className="mb-1.5 truncate text-[12.5px] text-slate-500">
                         {conv.ultimo_mensaje || "Sin mensajes"}
                       </p>
-                      <div className="conversation-meta">
+                      <div className="flex items-center gap-1.5 text-[11.5px] text-slate-400">
                         <span
-                          className={`status-dot ${conv.sin_respuesta ? "pending" : "responded"}`}
-                        ></span>
-                        <i className={`${getCanalIcon(conv.canal)} canal-icon`}></i>
-                        <span className="conversation-program">
-                          {conv.lead?.programa || "-"}
-                        </span>
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            conv.sin_respuesta ? "bg-rose-500" : "bg-emerald-500"
+                          )}
+                        />
+                        <FontAwesomeIcon
+                          icon={getCanalIcon(conv.canal)}
+                          className="text-[10px]"
+                        />
+                        <span className="truncate">{conv.lead?.programa || "—"}</span>
                       </div>
                     </div>
                   </div>
@@ -310,13 +329,13 @@ export function MensajeriaPage() {
           </div>
         </section>
 
-        <section className="chat-panel">
+        <section className="flex flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
           {selectedDocumentId && convActual ?
             <>
-              <div className="chat-header">
-                <div className="chat-contact">
+              <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-4">
+                <div className="flex items-center gap-3">
                   <div
-                    className="chat-contact-avatar"
+                    className="flex size-11 items-center justify-center rounded-full text-[13px] font-semibold text-white"
                     style={{
                       background: getAvatarColor(
                         convActual.lead ?
@@ -332,46 +351,70 @@ export function MensajeriaPage() {
                     )}
                   </div>
                   <div>
-                    <h2>
+                    <h3 className="text-[15px] font-semibold tracking-tight text-slate-900">
                       {convActual.lead ?
                         `${convActual.lead.nombres} ${convActual.lead.apellidos}`
                       : "Sin lead"}
-                    </h2>
-                    <p>
-                      {convActual.lead?.programa || "-"} -{" "}
-                      {convActual.lead?.ciudad || "-"}
+                    </h3>
+                    <p className="mt-0.5 text-[12.5px] text-slate-500">
+                      {convActual.lead?.programa || "—"} · {convActual.lead?.ciudad || "—"}
                     </p>
                   </div>
                 </div>
-                <div className="chat-header-actions">
-                  <span className="chat-channel-badge">
-                    <i className={getCanalIcon(convActual.canal)}></i> {convActual.canal}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11.5px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15">
+                    <FontAwesomeIcon icon={getCanalIcon(convActual.canal)} className="text-[10px]" />
+                    {convActual.canal}
                   </span>
-                  <button className="messaging-icon-btn">
-                    <i className="fas fa-phone"></i>
+                  <button
+                    type="button"
+                    className="flex size-9 cursor-pointer items-center justify-center rounded-md border-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    <FontAwesomeIcon icon={faPhone} className="size-3.5" />
                   </button>
-                  <button className="messaging-icon-btn">
-                    <i className="fas fa-ellipsis-v"></i>
+                  <button
+                    type="button"
+                    className="flex size-9 cursor-pointer items-center justify-center rounded-md border-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    <FontAwesomeIcon icon={faEllipsisV} className="size-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="chat-messages">
+              <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-slate-50/40 p-6">
                 {mensajesLoading ?
-                  <div className="chat-empty">
-                    <i className="fas fa-spinner fa-spin"></i>
-                    <p>Cargando mensajes...</p>
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-500">
+                    <FontAwesomeIcon icon={faSpinner} spin className="size-5" />
+                    <p className="text-[13px]">Cargando mensajes…</p>
                   </div>
                 : !mensajes || mensajes.length === 0 ?
-                  <div className="chat-empty">
-                    <i className="fas fa-comment-dots"></i>
-                    <p>Sin mensajes aún</p>
+                  <div className="flex flex-1 flex-col items-center justify-center text-slate-400">
+                    <FontAwesomeIcon icon={faCommentDots} className="mb-3 size-10 text-slate-300" />
+                    <p className="text-[13px]">Sin mensajes aún</p>
                   </div>
                 : mensajes.map((msg) => (
-                    <div key={msg.id} className={`message ${msg.tipo}`}>
-                      <div className="message-bubble">
-                        <p>{msg.contenido}</p>
-                        <span className="message-time">
+                    <div
+                      key={msg.id}
+                      className={cn(
+                        "flex max-w-[72%]",
+                        msg.tipo === "entrada" ? "self-start" : "self-end"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "rounded-2xl px-4 py-2.5 shadow-sm",
+                          msg.tipo === "entrada"
+                            ? "rounded-bl-sm border border-slate-200/70 bg-white text-slate-900"
+                            : "rounded-br-sm bg-slate-900 text-white"
+                        )}
+                      >
+                        <p className="text-[13.5px] leading-relaxed">{msg.contenido}</p>
+                        <span
+                          className={cn(
+                            "mt-0.5 block text-right text-[10.5px]",
+                            msg.tipo === "entrada" ? "text-slate-400" : "text-slate-300"
+                          )}
+                        >
                           {new Date(msg.timestamp).toLocaleTimeString("es-ES", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -384,152 +427,156 @@ export function MensajeriaPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="chat-composer">
-                <button className="messaging-icon-btn">
-                  <i className="fas fa-paperclip"></i>
+              <div className="flex items-center gap-2.5 border-t border-slate-200/70 bg-white p-4">
+                <button
+                  type="button"
+                  className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <FontAwesomeIcon icon={faPaperclip} className="size-3.5" />
                 </button>
                 <input
                   type="text"
-                  placeholder="Escribe una respuesta para dejarla registrada en el historial"
+                  placeholder="Escribe una respuesta…"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  className="h-10 flex-1 rounded-full border border-slate-300 bg-white px-4 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
                 />
                 <button
-                  className="chat-send-btn"
+                  type="button"
+                  className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-slate-900 px-5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleSendMessage}
                   disabled={createMensaje.isPending || !newMessage.trim()}
                 >
-                  <i className="fas fa-paper-plane"></i>
+                  <FontAwesomeIcon icon={faPaperPlane} className="size-3.5" />
                   Enviar
                 </button>
               </div>
             </>
-          : <div className="chat-empty">
-              <i className="fas fa-comments"></i>
-              <p>Selecciona una conversacion para comenzar</p>
+          : <div className="flex flex-1 flex-col items-center justify-center text-slate-400">
+              <FontAwesomeIcon icon={faComments} className="mb-3 size-10 text-slate-300" />
+              <p className="text-[13px]">Selecciona una conversacion para comenzar</p>
             </div>
           }
         </section>
 
-        <aside className="conversation-summary">
+        <aside className="flex flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
           {selectedDocumentId && convActual ?
             <>
-              <div className="summary-card">
-                <h3>Resumen del lead</h3>
-                <ul className="summary-list">
-                  <li>
-                    <span>Estado</span>
-                    <strong
-                      className={`status-badge status-${convActual.lead?.estado || "nuevo"}`}
-                    >
-                      {convActual.lead?.estado || "Sin estado"}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>Canal</span>
-                    <strong>
-                      <i className={`${getCanalIcon(convActual.canal)}`}></i>{" "}
+              <SummaryCard title="Resumen del lead">
+                <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+                  <SummaryRow label="Estado">
+                    <StatusBadge estado={convActual.lead?.estado} />
+                  </SummaryRow>
+                  <SummaryRow label="Canal">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-700">
+                      <FontAwesomeIcon icon={getCanalIcon(convActual.canal)} className="text-slate-400" />
                       {convActual.canal}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>Ciudad</span>
-                    <strong>{convActual.lead?.ciudad || "-"}</strong>
-                  </li>
-                  <li>
-                    <span>Asesor</span>
-                    <strong>{getAsesorNombre(convActual.lead?.asesor)}</strong>
-                  </li>
-                  <li>
-                    <span>Tiempo de respuesta</span>
-                    <strong>
-                      {convActual.sin_respuesta ? "Sin responder" : "Respondido"}
-                    </strong>
-                  </li>
+                    </span>
+                  </SummaryRow>
+                  <SummaryRow label="Ciudad" value={convActual.lead?.ciudad} />
+                  <SummaryRow label="Asesor" value={getAsesorNombre(convActual.lead?.asesor)} />
+                  <SummaryRow
+                    label="Respuesta"
+                    value={convActual.sin_respuesta ? "Sin responder" : "Respondido"}
+                  />
                 </ul>
-              </div>
+              </SummaryCard>
 
-              <div className="summary-card">
-                <h3>Proxima accion</h3>
-                <div className="next-action-card">
-                  <span className="next-action-tag">Sin etiqueta</span>
-                  <p>
-                    {convActual.lead?.fecha_proxima_accion ||
-                      "Sin proxima accion registrada."}
-                  </p>
-                </div>
-              </div>
+              <SummaryCard title="Proxima accion">
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11.5px] font-medium text-slate-600">
+                  Sin etiqueta
+                </span>
+                <p className="mt-2 text-[13px] text-slate-700">
+                  {convActual.lead?.fecha_proxima_accion ||
+                    "Sin proxima accion registrada."}
+                </p>
+              </SummaryCard>
 
               {convActual?.lead?.documentId ?
-                <div className="summary-card">
-                  <div className="ai-config-header">
-                    <h3>Configuracion AI</h3>
-                    <span className={`ai-status-chip ${configAi?.habilitado ? "active" : "paused"}`}>
-                      {configAi?.habilitado ? `● ${(configAi.modelo || MODELOS_AI[0]).slice(0, 18)}` : "● Pausada"}
+                <SummaryCard
+                  title="Configuracion AI"
+                  right={
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
+                        configAi?.habilitado
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
+                          : "bg-slate-100 text-slate-500"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-1.5 rounded-full",
+                          configAi?.habilitado ? "bg-emerald-500" : "bg-slate-400"
+                        )}
+                      />
+                      {configAi?.habilitado
+                        ? (configAi.modelo || MODELOS_AI[0]).slice(0, 18)
+                        : "Pausada"}
                     </span>
-                  </div>
-
-                  {configAi ? (
-                    <div>
-                      <div className="ai-toggle-wrapper">
-                        <label className="ai-toggle">
-                          <input
-                            type="checkbox"
-                            checked={!!configAi.habilitado}
-                            disabled={createConfigAi.isPending || updateConfigAi.isPending}
-                            onChange={() => {
-                              updateConfigAi.mutate({
-                                documentId: configAi.documentId,
-                                data: { habilitado: !configAi.habilitado },
-                              });
-                            }}
-                          />
-                          <div className="ai-track"><div className="ai-knob" /></div>
-                        </label>
-                        <span style={{ fontSize: "12px", color: configAi.habilitado ? "#666" : "#9ca3af" }}>
+                  }
+                >
+                  {configAi ?
+                    <>
+                      <div className="mb-3 flex items-center gap-2.5">
+                        <ToggleSwitch
+                          checked={!!configAi.habilitado}
+                          disabled={createConfigAi.isPending || updateConfigAi.isPending}
+                          onChange={() => {
+                            updateConfigAi.mutate({
+                              documentId: configAi.documentId,
+                              data: { habilitado: !configAi.habilitado },
+                            });
+                          }}
+                        />
+                        <span className="text-[12.5px] text-slate-700">
                           {configAi.habilitado ? "AI activa" : "AI pausada para este lead"}
                         </span>
                       </div>
 
                       {configAi.habilitado && (
-                        <div>
-                          <label className="ai-field-label">Modelo</label>
-                          <select
-                            className="ai-model-select"
-                            value={configAi.modelo || MODELOS_AI[0]}
-                            disabled={updateConfigAi.isPending}
-                            onChange={(e) => {
-                              updateConfigAi.mutate({
-                                documentId: configAi.documentId,
-                                data: { modelo: e.target.value },
-                              });
-                            }}
-                          >
-                            {MODELOS_AI.map((m) => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
+                        <div className="space-y-3">
+                          <Field label="Modelo">
+                            <select
+                              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-slate-900"
+                              value={configAi.modelo || MODELOS_AI[0]}
+                              disabled={updateConfigAi.isPending}
+                              onChange={(e) => {
+                                updateConfigAi.mutate({
+                                  documentId: configAi.documentId,
+                                  data: { modelo: e.target.value },
+                                });
+                              }}
+                            >
+                              {MODELOS_AI.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          </Field>
 
-                          <label className="ai-field-label">Prompt personalizado</label>
-                          <textarea
-                            className="ai-prompt-textarea"
-                            placeholder="Instrucciones para este lead..."
-                            value={promptDraft}
-                            onChange={(e) => setPromptDraft(e.target.value)}
-                          />
+                          <Field label="Prompt personalizado">
+                            <textarea
+                              className="min-h-[72px] w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
+                              placeholder="Instrucciones para este lead…"
+                              value={promptDraft}
+                              onChange={(e) => setPromptDraft(e.target.value)}
+                            />
+                          </Field>
 
-                          <label className="ai-field-label">Notas AI (privadas)</label>
-                          <textarea
-                            className="ai-prompt-textarea"
-                            placeholder="Notas internas del asesor sobre el comportamiento del AI..."
-                            value={notasDraft}
-                            onChange={(e) => setNotasDraft(e.target.value)}
-                          />
+                          <Field label="Notas AI (privadas)">
+                            <textarea
+                              className="min-h-[72px] w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
+                              placeholder="Notas internas del asesor…"
+                              value={notasDraft}
+                              onChange={(e) => setNotasDraft(e.target.value)}
+                            />
+                          </Field>
 
-                          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+                          <div className="flex justify-end pt-1">
                             <button
-                              className="ai-save-btn"
+                              type="button"
+                              className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-slate-900 px-3.5 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={
                                 updateConfigAi.isPending ||
                                 (promptDraft === (configAi.prompt_custom || "") &&
@@ -547,29 +594,26 @@ export function MensajeriaPage() {
                           </div>
                         </div>
                       )}
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="ai-toggle-wrapper">
-                        <label className="ai-toggle">
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            disabled={createConfigAi.isPending}
-                            onChange={() => {
-                              createConfigAi.mutate({
-                                leadDocumentId: convActual.lead!.documentId,
-                                habilitado: true,
-                                modelo: MODELOS_AI[0],
-                              });
-                            }}
-                          />
-                          <div className="ai-track"><div className="ai-knob" /></div>
-                        </label>
-                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>AI pausada para este lead</span>
+                    </>
+                  : (
+                    <>
+                      <div className="mb-3 flex items-center gap-2.5">
+                        <ToggleSwitch
+                          checked={false}
+                          disabled={createConfigAi.isPending}
+                          onChange={() => {
+                            createConfigAi.mutate({
+                              leadDocumentId: convActual.lead!.documentId,
+                              habilitado: true,
+                              modelo: MODELOS_AI[0],
+                            });
+                          }}
+                        />
+                        <span className="text-[12.5px] text-slate-500">AI pausada</span>
                       </div>
                       <button
-                        className="ai-activate-btn"
+                        type="button"
+                        className="h-9 w-full cursor-pointer rounded-md border border-slate-300 bg-white text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                         disabled={createConfigAi.isPending}
                         onClick={() => {
                           createConfigAi.mutate({
@@ -581,37 +625,186 @@ export function MensajeriaPage() {
                       >
                         Activar AI
                       </button>
-                    </div>
+                    </>
                   )}
-                </div>
+                </SummaryCard>
               : null}
 
-              <div className="summary-card">
-                <h3>Actividad reciente</h3>
-                <div className="activity-list">
-                  {mensajes && mensajes.length > 0 ?
-                    mensajes.slice(-3).map((msg) => (
-                      <div key={msg.id} className="activity-item">
-                        <span className={`activity-dot ${msg.tipo}`}></span>
-                        <p>{msg.contenido}</p>
-                        <span className="activity-time">
+              <SummaryCard title="Actividad reciente">
+                {mensajes && mensajes.length > 0 ?
+                  <ul className="m-0 list-none space-y-2 p-0">
+                    {mensajes.slice(-3).map((msg) => (
+                      <li
+                        key={msg.id}
+                        className="flex items-start gap-2.5 rounded-md border border-slate-200/70 p-2.5"
+                      >
+                        <span
+                          className={cn(
+                            "mt-1.5 size-1.5 shrink-0 rounded-full",
+                            msg.tipo === "entrada" ? "bg-blue-500" : "bg-emerald-500"
+                          )}
+                        />
+                        <p className="m-0 flex-1 text-[12.5px] leading-snug text-slate-700">
+                          {msg.contenido}
+                        </p>
+                        <span className="shrink-0 text-[10.5px] text-slate-400">
                           {new Date(msg.timestamp).toLocaleTimeString("es-ES", {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
                         </span>
-                      </div>
-                    ))
-                  : <p className="no-activities">Sin actividad reciente</p>}
-                </div>
-              </div>
+                      </li>
+                    ))}
+                  </ul>
+                : <p className="m-0 text-[12.5px] text-slate-500">Sin actividad reciente</p>}
+              </SummaryCard>
             </>
-          : <div className="summary-empty">
-              <p>Selecciona una conversacion para ver el resumen</p>
+          : <div className="flex flex-1 items-center justify-center p-6 text-center text-[13px] text-slate-500">
+              Selecciona una conversacion para ver el resumen
             </div>
           }
         </aside>
       </div>
     </div>
+  );
+}
+
+function KpiMensajeria({
+  label,
+  value,
+  icon,
+  accent = "default",
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  accent?: "default" | "warning" | "success";
+}) {
+  const a =
+    accent === "warning"
+      ? { bg: "bg-amber-50", fg: "text-amber-600" }
+      : accent === "success"
+      ? { bg: "bg-emerald-50", fg: "text-emerald-600" }
+      : { bg: "bg-slate-100", fg: "text-slate-600" };
+  return (
+    <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
+          {label}
+        </span>
+        <div className={cn("flex size-8 items-center justify-center rounded-md", a.bg, a.fg)}>
+          {icon}
+        </div>
+      </div>
+      <div className="text-[24px] font-semibold tracking-tight text-slate-900 tabular-nums">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  children,
+  right,
+}: {
+  title: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200/70 bg-slate-50/30 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="text-[12.5px] font-semibold uppercase tracking-wide text-slate-700">
+          {title}
+        </h4>
+        {right}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-center justify-between py-2.5">
+      <span className="text-[12px] text-slate-500">{label}</span>
+      {children ?? <span className="text-[12.5px] font-medium text-slate-900">{value}</span>}
+    </li>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function ToggleSwitch({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className={cn("relative inline-flex cursor-pointer items-center", disabled && "cursor-not-allowed opacity-50")}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+        className="peer sr-only"
+      />
+      <span
+        className={cn(
+          "relative h-5 w-9 rounded-full transition-colors",
+          checked ? "bg-slate-900" : "bg-slate-300"
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-all",
+            checked ? "left-[18px]" : "left-0.5"
+          )}
+        />
+      </span>
+    </label>
+  );
+}
+
+function StatusBadge({ estado }: { estado?: string }) {
+  const map: Record<string, string> = {
+    nuevo: "bg-blue-50 text-blue-700 ring-blue-600/10",
+    contactado: "bg-amber-50 text-amber-700 ring-amber-600/15",
+    interesado: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
+    calificado: "bg-violet-50 text-violet-700 ring-violet-600/15",
+    cerrado: "bg-slate-100 text-slate-600 ring-slate-500/15",
+  };
+  const cls = map[estado || ""] || map.nuevo;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-[11.5px] font-medium ring-1 ring-inset",
+        cls
+      )}
+    >
+      {estado || "Sin estado"}
+    </span>
   );
 }

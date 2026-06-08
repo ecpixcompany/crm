@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { X, Save, Plus, UserPlus } from 'lucide-react';
+import { X, Save, UserPlus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -88,15 +88,15 @@ export function CreateLeadModal({ onClose }: CreateLeadModalProps) {
           </DialogClose>
         </DialogHeader>
 
-        <div className="flex items-center gap-4 py-4 border-y">
-          <div className="w-16 h-16 rounded-full bg-unimeta-red text-white flex items-center justify-center text-xl font-bold">
+        <div className="flex items-center gap-4 border-b border-slate-200/70 py-4">
+          <div className="flex size-14 items-center justify-center rounded-full bg-slate-900 text-lg font-semibold text-white">
             {initials}
           </div>
           <div>
-            <div className="text-base font-semibold">
+            <div className="text-[15px] font-semibold tracking-tight text-slate-900">
               {formData.nombres || 'Nuevo lead'} {formData.apellidos}
             </div>
-            <div className="text-sm text-muted-foreground">{formData.programa}</div>
+            <div className="mt-0.5 text-[12.5px] text-slate-500">{formData.programa}</div>
           </div>
         </div>
 

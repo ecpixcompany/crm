@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Plus, Search, ListFilter } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Search } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -16,21 +15,30 @@ import { useLeads } from "@/hooks/useLeads";
 import { useAsesores } from "@/hooks/useAsesores";
 import { CreateLeadModal } from "@/components/modals/CreateLeadModal";
 import { LeadDetailModal } from "@/components/modals/LeadDetailModal";
+import { cn } from "@/lib/utils";
 
 const getInitials = (n: string, a: string) =>
   `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
 
 const getAvatarColor = (nombre: string) => {
-  const colors = ["#4a90d9", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6"];
+  const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
   return colors[nombre.charCodeAt(0) % colors.length];
 };
 
-const estadoColor: Record<string, string> = {
-  nuevo: "bg-blue-100 text-blue-700",
-  contactado: "bg-orange-100 text-orange-700",
-  interesado: "bg-emerald-100 text-emerald-700",
-  calificado: "bg-purple-100 text-purple-700",
-  cerrado: "bg-red-100 text-red-700",
+const ESTADO_LABEL: Record<string, string> = {
+  nuevo: "Nuevo",
+  contactado: "Contactado",
+  interesado: "Interesado",
+  calificado: "Calificado",
+  cerrado: "Cerrado",
+};
+
+const ESTADO_TONE: Record<string, string> = {
+  nuevo: "bg-blue-50 text-blue-700 ring-blue-600/10",
+  contactado: "bg-amber-50 text-amber-700 ring-amber-600/15",
+  interesado: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
+  calificado: "bg-violet-50 text-violet-700 ring-violet-600/15",
+  cerrado: "bg-slate-100 text-slate-600 ring-slate-500/15",
 };
 
 export function LeadsPage() {
@@ -60,66 +68,55 @@ export function LeadsPage() {
     return matchesSearch && matchesState && matchesPrograma && matchesAsesor;
   });
 
+  const hasFilters = !!(stateFilter || programaFilter || asesorFilter || searchTerm);
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="flex justify-between items-center py-5">
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Hoja de vida 360° conectada a Strapi</h2>
-            <p className="text-sm text-muted-foreground">
-              Los campos visibles ya quedaron estructurados para que el backend alimente el CRM.
-            </p>
-          </div>
-          <Badge className="bg-unimeta-red text-white">Lead 360</Badge>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-[22px] font-semibold tracking-tight text-slate-900">
+            Leads
+          </h2>
+          <p className="mt-1 text-[13.5px] text-slate-500">
+            Hoja de vida 360° · {leads.length} {leads.length === 1 ? 'lead' : 'leads'} en base
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowCreateModal(true)}
+          className="bg-unimeta-red text-white hover:bg-unimeta-red-dark shadow-sm"
+        >
+          <Plus className="size-4" />
+          Nuevo lead
+        </Button>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ListFilter className="h-4 w-4 text-unimeta-red" /> Leads
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Filtra, abre y actualiza leads con estructura preparada para Strapi.
-              </p>
-            </div>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-unimeta-red hover:bg-unimeta-red-dark"
-            >
-              <Plus className="h-4 w-4" /> Nuevo lead
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 min-w-[200px] relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="overflow-hidden border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+        <CardHeader className="border-b border-slate-200/70 bg-slate-50/30">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[260px]">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <Input
                 placeholder="Buscar por nombre, cedula, correo, celular..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="h-10 pl-10"
               />
             </div>
             <Select value={stateFilter} onValueChange={setStateFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="h-10 w-[180px]">
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
                 {ESTADOS.map((estado) => (
                   <SelectItem key={estado} value={estado}>
-                    {estado}
+                    {ESTADO_LABEL[estado] || estado}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={programaFilter} onValueChange={setProgramaFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="h-10 w-[200px]">
                 <SelectValue placeholder="Todos los programas" />
               </SelectTrigger>
               <SelectContent>
@@ -132,7 +129,7 @@ export function LeadsPage() {
               </SelectContent>
             </Select>
             <Select value={asesorFilter} onValueChange={setAsesorFilter} disabled={asesoresLoading}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="h-10 w-[200px]">
                 <SelectValue placeholder={asesoresLoading ? "Cargando..." : "Todos los asesores"} />
               </SelectTrigger>
               <SelectContent>
@@ -145,37 +142,44 @@ export function LeadsPage() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-muted-foreground text-left">
-                <tr>
-                  <th className="py-3 px-3 font-medium w-12"></th>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-[13px]">
+              <thead>
+                <tr className="border-y border-slate-200/70 bg-slate-50/50 text-left text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
+                  <th className="py-3 px-6 font-medium w-14" />
                   <th className="py-3 px-3 font-medium">Lead</th>
                   <th className="py-3 px-3 font-medium">Programa</th>
                   <th className="py-3 px-3 font-medium">Fuente</th>
                   <th className="py-3 px-3 font-medium">Asesor</th>
-                  <th className="py-3 px-3 font-medium text-center">Estado</th>
+                  <th className="py-3 px-6 font-medium">Estado</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-muted-foreground">
-                      Cargando leads...
+                    <td colSpan={6} className="py-12 text-center text-slate-500">
+                      Cargando leads…
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-destructive">
+                    <td colSpan={6} className="py-12 text-center text-rose-600">
                       Error: {error.message}
                     </td>
                   </tr>
                 ) : filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-muted-foreground">
-                      No hay leads
+                    <td colSpan={6} className="py-16 text-center">
+                      <p className="text-[13px] font-medium text-slate-900">
+                        {hasFilters ? "Sin resultados" : "No hay leads"}
+                      </p>
+                      <p className="mt-1 text-[12.5px] text-slate-500">
+                        {hasFilters
+                          ? "Ajusta los filtros o limpia la búsqueda."
+                          : "Crea el primer lead con el botón superior."}
+                      </p>
                     </td>
                   </tr>
                 ) : (
@@ -183,30 +187,40 @@ export function LeadsPage() {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLeadId(lead.documentId)}
-                      className="border-t border-border hover:bg-muted/30 cursor-pointer transition-colors"
+                      className="cursor-pointer transition-colors hover:bg-slate-50/60"
                     >
-                      <td className="py-3 px-3">
+                      <td className="px-6 py-3.5">
                         <div
-                          className="w-9 h-9 rounded-full text-white flex items-center justify-center font-semibold text-xs"
+                          className="flex size-9 items-center justify-center rounded-full text-[12px] font-semibold text-white shadow-sm"
                           style={{ background: getAvatarColor(lead.nombres) }}
                         >
                           {getInitials(lead.nombres, lead.apellidos)}
                         </div>
                       </td>
-                      <td className="py-3 px-3 font-medium">
-                        {lead.nombres} {lead.apellidos}
+                      <td className="px-3 py-3.5">
+                        <div className="font-medium text-slate-900">
+                          {lead.nombres} {lead.apellidos}
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-slate-500">
+                          {lead.celular || lead.correo || "—"}
+                        </div>
                       </td>
-                      <td className="py-3 px-3">{lead.programa}</td>
-                      <td className="py-3 px-3">{lead.fuente || "-"}</td>
-                      <td className="py-3 px-3">
+                      <td className="px-3 py-3.5 text-slate-700">{lead.programa}</td>
+                      <td className="px-3 py-3.5 text-slate-600">{lead.fuente || "—"}</td>
+                      <td className="px-3 py-3.5 text-slate-700">
                         {lead.asesor && typeof lead.asesor === "object"
                           ? lead.asesor.nombre
-                          : "-"}
+                          : "—"}
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <Badge className={estadoColor[lead.estado] || "bg-gray-100 text-gray-700"}>
-                          {lead.estado}
-                        </Badge>
+                      <td className="px-6 py-3.5">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-2 py-0.5 text-[11.5px] font-medium ring-1 ring-inset",
+                            ESTADO_TONE[lead.estado] || ESTADO_TONE.nuevo
+                          )}
+                        >
+                          {ESTADO_LABEL[lead.estado] || lead.estado}
+                        </span>
                       </td>
                     </tr>
                   ))
@@ -214,6 +228,13 @@ export function LeadsPage() {
               </tbody>
             </table>
           </div>
+          {filteredLeads.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-200/70 px-6 py-3 text-[12.5px] text-slate-500">
+              <span>
+                Mostrando {filteredLeads.length} de {leads.length} {leads.length === 1 ? 'lead' : 'leads'}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -7,7 +7,6 @@ import {
   Trash2,
   Settings as SettingsIcon,
   Users as UsersIcon,
-  CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,7 @@ import {
 import { useAsesores, useCreateAsesor, useUpdateAsesor, useDeleteAsesor } from '@/hooks/useAsesores';
 import { useConfiguracion, useUpdateConfiguracion } from '@/hooks/useConfiguracion';
 import type { Asesor } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export function ConfiguracionPage() {
   const { data: asesores = [], isLoading: asesoresLoading } = useAsesores();
@@ -100,89 +100,122 @@ export function ConfiguracionPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="flex justify-between items-center py-5">
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Configuración del CRM</h2>
-            <p className="text-sm text-muted-foreground">
+      <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+        <CardContent className="flex flex-col gap-3 py-6 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[15px] font-semibold text-slate-900">
+              Configuración del CRM
+            </h2>
+            <p className="mt-1 text-[13px] text-slate-500">
               Administra asesores y configuración global del CRM.
             </p>
           </div>
-          <Badge className="bg-unimeta-red text-white">Ajustes</Badge>
+          <Badge variant="secondary" className="shrink-0 bg-slate-100 text-slate-700">
+            Ajustes
+          </Badge>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <UsersIcon className="h-4 w-4 text-unimeta-red" /> Asesores
-              </CardTitle>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className="overflow-hidden border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+          <CardHeader className="border-b border-slate-200/70">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+                  <UsersIcon className="size-4 text-slate-500" />
+                  Asesores
+                </CardTitle>
+                <p className="mt-1 text-[12.5px] text-slate-500">
+                  {asesores.length} {asesores.length === 1 ? 'registrado' : 'registrados'}
+                </p>
+              </div>
               <Button
                 size="sm"
                 onClick={() => handleOpenAsesorModal()}
-                className="bg-unimeta-red hover:bg-unimeta-red-dark"
+                className="bg-unimeta-red text-white hover:bg-unimeta-red-dark"
               >
-                <Plus className="h-4 w-4" /> Agregar asesor
+                <Plus className="size-4" />
+                Agregar asesor
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {asesoresLoading ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
+              <p className="py-10 text-center text-[13px] text-slate-500">Cargando…</p>
             ) : (
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground text-left">
-                    <tr>
-                      <th className="py-3 px-3 font-medium">Nombre</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-y border-slate-200/70 bg-slate-50/50 text-left text-[11.5px] font-medium uppercase tracking-wide text-slate-500">
+                      <th className="py-3 px-6 font-medium">Nombre</th>
                       <th className="py-3 px-3 font-medium">Correo</th>
-                      <th className="py-3 px-3 font-medium">Activo</th>
-                      <th className="py-3 px-3 font-medium text-right">Acciones</th>
+                      <th className="py-3 px-3 font-medium">Estado</th>
+                      <th className="py-3 px-6 font-medium text-right">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {asesores.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center py-6 text-muted-foreground">
+                        <td colSpan={4} className="py-10 text-center text-slate-500">
                           No hay asesores registrados
                         </td>
                       </tr>
                     ) : (
                       asesores.map((asesor) => (
-                        <tr key={asesor.id} className="border-t border-border">
-                          <td className="py-3 px-3 font-medium">{asesor.nombre}</td>
-                          <td className="py-3 px-3">{asesor.correo || '-'}</td>
-                          <td className="py-3 px-3">
-                            <label className="inline-flex items-center cursor-pointer">
+                        <tr
+                          key={asesor.id}
+                          className="transition-colors hover:bg-slate-50/60"
+                        >
+                          <td className="px-6 py-3.5">
+                            <div className="font-medium text-slate-900">{asesor.nombre}</div>
+                          </td>
+                          <td className="px-3 py-3.5 text-slate-600">
+                            {asesor.correo || '—'}
+                          </td>
+                          <td className="px-3 py-3.5">
+                            <label className="inline-flex cursor-pointer items-center">
                               <input
                                 type="checkbox"
                                 checked={asesor.activo}
                                 onChange={() => handleToggleActivo(asesor)}
-                                className="sr-only peer"
+                                className="peer sr-only"
                               />
-                              <span className="w-9 h-5 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                              <span
+                                className={cn(
+                                  'relative h-5 w-9 rounded-full transition-colors',
+                                  asesor.activo
+                                    ? 'bg-unimeta-red'
+                                    : 'bg-slate-300'
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    'absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-all',
+                                    asesor.activo ? 'left-[18px]' : 'left-0.5'
+                                  )}
+                                />
+                              </span>
                             </label>
                           </td>
-                          <td className="py-3 px-3 text-right">
-                            <div className="inline-flex gap-1">
+                          <td className="px-6 py-3.5">
+                            <div className="inline-flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => handleOpenAsesorModal(asesor)}
+                                className="text-slate-500 hover:text-slate-900"
                                 title="Editar"
                               >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="size-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => handleDeleteAsesor(asesor.documentId)}
-                                className="text-destructive hover:text-destructive"
+                                className="text-slate-500 hover:text-rose-600"
                                 title="Eliminar"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="size-3.5" />
                               </Button>
                             </div>
                           </td>
@@ -196,51 +229,76 @@ export function ConfiguracionPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <SettingsIcon className="h-4 w-4 text-unimeta-red" /> Configuración global
+        <Card className="border-slate-200/70 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+          <CardHeader className="border-b border-slate-200/70">
+            <CardTitle className="flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+              <SettingsIcon className="size-4 text-slate-500" />
+              Configuración global
             </CardTitle>
+            <p className="mt-1 text-[12.5px] text-slate-500">
+              Ajustes visibles para toda la operación.
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 p-6">
             <div className="space-y-1.5">
-              <Label>Slogan principal</Label>
+              <Label htmlFor="slogan" className="text-[12.5px] font-medium text-slate-700">
+                Slogan principal
+              </Label>
               <Input
+                id="slogan"
                 value={configForm.slogan_principal}
                 onChange={(e) => setConfigForm({ ...configForm, slogan_principal: e.target.value })}
+                placeholder="Texto que verán los usuarios al iniciar"
               />
             </div>
-            <div className="flex items-center justify-between py-2">
+
+            <div className="flex items-start justify-between gap-4 rounded-md border border-slate-200/70 bg-slate-50/50 p-4">
               <div>
-                <Label>Modo demo</Label>
-                <p className="text-xs text-muted-foreground mt-1">
+                <Label htmlFor="modo-demo" className="text-[13px] font-medium text-slate-900">
+                  Modo demo
+                </Label>
+                <p className="mt-1 text-[12.5px] text-slate-500">
                   Cuando está activo, muestra el chip "Modo demo" en las páginas.
                 </p>
               </div>
-              <label className="inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                 <input
+                  id="modo-demo"
                   type="checkbox"
                   checked={configForm.modo_demo}
                   onChange={(e) => setConfigForm({ ...configForm, modo_demo: e.target.checked })}
-                  className="sr-only peer"
+                  className="peer sr-only"
                 />
-                <span className="w-11 h-6 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+                <span
+                  className={cn(
+                    'relative h-6 w-11 rounded-full transition-colors',
+                    configForm.modo_demo ? 'bg-unimeta-red' : 'bg-slate-300'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all',
+                      configForm.modo_demo ? 'left-[22px]' : 'left-0.5'
+                    )}
+                  />
+                </span>
               </label>
             </div>
+
             <Button
               onClick={handleSaveConfig}
               disabled={updateConfig.isPending}
-              className="w-full bg-unimeta-red hover:bg-unimeta-red-dark"
+              className="w-full bg-unimeta-red text-white hover:bg-unimeta-red-dark"
             >
               {saveSuccess ? (
                 <>
-                  <Check className="h-4 w-4" /> Guardado
+                  <Check className="size-4" /> Guardado
                 </>
               ) : updateConfig.isPending ? (
-                'Guardando...'
+                'Guardando…'
               ) : (
                 <>
-                  <Save className="h-4 w-4" /> Guardar
+                  <Save className="size-4" /> Guardar cambios
                 </>
               )}
             </Button>
@@ -254,34 +312,49 @@ export function ConfiguracionPage() {
             <DialogTitle>{editingAsesor ? 'Editar asesor' : 'Nuevo asesor'}</DialogTitle>
             <DialogClose />
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
             <div className="space-y-1.5">
-              <Label>Nombre *</Label>
+              <Label htmlFor="asesor-nombre">Nombre *</Label>
               <Input
+                id="asesor-nombre"
                 value={asesorForm.nombre}
                 onChange={(e) => setAsesorForm({ ...asesorForm, nombre: e.target.value })}
                 placeholder="Nombre del asesor"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Correo</Label>
+              <Label htmlFor="asesor-correo">Correo</Label>
               <Input
+                id="asesor-correo"
                 type="email"
                 value={asesorForm.correo}
                 onChange={(e) => setAsesorForm({ ...asesorForm, correo: e.target.value })}
                 placeholder="correo@ejemplo.com"
               />
             </div>
-            <div className="flex items-center justify-between py-2">
-              <Label>Activo</Label>
-              <label className="inline-flex items-center cursor-pointer">
+            <div className="flex items-center justify-between rounded-md border border-slate-200/70 bg-slate-50/50 p-3.5">
+              <Label htmlFor="asesor-activo">Asesor activo</Label>
+              <label className="relative inline-flex cursor-pointer items-center">
                 <input
+                  id="asesor-activo"
                   type="checkbox"
                   checked={asesorForm.activo}
                   onChange={(e) => setAsesorForm({ ...asesorForm, activo: e.target.checked })}
-                  className="sr-only peer"
+                  className="peer sr-only"
                 />
-                <span className="w-11 h-6 bg-muted rounded-full relative peer-checked:bg-unimeta-red transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+                <span
+                  className={cn(
+                    'relative h-6 w-11 rounded-full transition-colors',
+                    asesorForm.activo ? 'bg-unimeta-red' : 'bg-slate-300'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all',
+                      asesorForm.activo ? 'left-[22px]' : 'left-0.5'
+                    )}
+                  />
+                </span>
               </label>
             </div>
           </div>
@@ -292,9 +365,9 @@ export function ConfiguracionPage() {
             <Button
               onClick={handleSaveAsesor}
               disabled={!asesorForm.nombre.trim() || createAsesor.isPending || updateAsesor.isPending}
-              className="bg-unimeta-red hover:bg-unimeta-red-dark"
+              className="bg-unimeta-red text-white hover:bg-unimeta-red-dark"
             >
-              {createAsesor.isPending || updateAsesor.isPending ? 'Guardando...' : 'Guardar'}
+              {createAsesor.isPending || updateAsesor.isPending ? 'Guardando…' : 'Guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
