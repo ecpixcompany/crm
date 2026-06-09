@@ -25,6 +25,8 @@ import type { Lead } from "../lib/api";
 import { sendMessageViaN8N, MODELOS_AI } from "../lib/api";
 import { getInitials, getAvatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { ConfiguracionAiModal } from "@/components/modals/ConfiguracionAiModal";
 
 export function MensajeriaPage() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -44,14 +46,7 @@ export function MensajeriaPage() {
   const { data: configAi } = useConfiguracionAiByLead(convActual?.lead?.documentId);
   const createConfigAi = useCreateConfiguracionAi();
   const updateConfigAi = useUpdateConfiguracionAi();
-  const [promptDraft, setPromptDraft] = useState(() => configAi?.prompt_custom || "");
-  const [notasDraft, setNotasDraft] = useState(() => configAi?.notas_ai || "");
-  const [lastDocId, setLastDocId] = useState(configAi?.documentId);
-  if (configAi?.documentId !== lastDocId) {
-    setLastDocId(configAi?.documentId);
-    setPromptDraft(configAi?.prompt_custom || "");
-    setNotasDraft(configAi?.notas_ai || "");
-  }
+  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -482,29 +477,7 @@ export function MensajeriaPage() {
               </SummaryCard>
 
               {convActual?.lead?.documentId ?
-                <SummaryCard
-                  title="Configuracion AI"
-                  right={
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
-                        configAi?.habilitado
-                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15"
-                          : "bg-slate-100 text-slate-500"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          configAi?.habilitado ? "bg-emerald-500" : "bg-slate-400"
-                        )}
-                      />
-                      {configAi?.habilitado
-                        ? (configAi.modelo || MODELOS_AI[0]).slice(0, 18)
-                        : "Pausada"}
-                    </span>
-                  }
-                >
+                <SummaryCard title="Configuracion AI">
                   {configAi ?
                     <>
                       <div className="mb-3 flex items-center gap-2.5">
@@ -522,86 +495,25 @@ export function MensajeriaPage() {
                           {configAi.habilitado ? "AI activa" : "AI pausada para este lead"}
                         </span>
                       </div>
-
-                      {configAi.habilitado && (
-                        <div className="space-y-3">
-                          <Field label="Modelo">
-                            <select
-                              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-slate-900"
-                              value={configAi.modelo || MODELOS_AI[0]}
-                              disabled={updateConfigAi.isPending}
-                              onChange={(e) => {
-                                updateConfigAi.mutate({
-                                  documentId: configAi.documentId,
-                                  data: { modelo: e.target.value },
-                                });
-                              }}
-                            >
-                              {MODELOS_AI.map((m) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
-                            </select>
-                          </Field>
-
-                          <Field label="Prompt personalizado">
-                            <textarea
-                              className="min-h-[72px] w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
-                              placeholder="Instrucciones para este lead…"
-                              value={promptDraft}
-                              onChange={(e) => setPromptDraft(e.target.value)}
-                            />
-                          </Field>
-
-                          <Field label="Notas AI (privadas)">
-                            <textarea
-                              className="min-h-[72px] w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900"
-                              placeholder="Notas internas del asesor…"
-                              value={notasDraft}
-                              onChange={(e) => setNotasDraft(e.target.value)}
-                            />
-                          </Field>
-
-                          <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-slate-900 px-3.5 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                              disabled={
-                                updateConfigAi.isPending ||
-                                (promptDraft === (configAi.prompt_custom || "") &&
-                                 notasDraft === (configAi.notas_ai || ""))
-                              }
-                              onClick={() => {
-                                updateConfigAi.mutate({
-                                  documentId: configAi.documentId,
-                                  data: { prompt_custom: promptDraft, notas_ai: notasDraft },
-                                });
-                              }}
-                            >
-                              Guardar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  : (
-                    <>
-                      <div className="mb-3 flex items-center gap-2.5">
-                        <ToggleSwitch
-                          checked={false}
-                          disabled={createConfigAi.isPending}
-                          onChange={() => {
-                            createConfigAi.mutate({
-                              leadDocumentId: convActual.lead!.documentId,
-                              habilitado: true,
-                              modelo: MODELOS_AI[0],
-                            });
-                          }}
-                        />
-                        <span className="text-[12.5px] text-slate-500">AI pausada</span>
-                      </div>
+                      <p className="mb-3 text-[11.5px] leading-snug text-slate-500">
+                        La IA responde preguntas generales automaticamente. Pausala para temas especificos como facturas.
+                      </p>
                       <button
                         type="button"
                         className="h-9 w-full cursor-pointer rounded-md border border-slate-300 bg-white text-[12.5px] font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                        onClick={() => setAiModalOpen(true)}
+                      >
+                        Configurar IA
+                      </button>
+                    </>
+                  : (
+                    <>
+                      <p className="mb-3 text-[11.5px] leading-snug text-slate-500">
+                        Activa la IA para que responda preguntas generales automaticamente.
+                      </p>
+                      <button
+                        type="button"
+                        className="h-9 w-full cursor-pointer rounded-md bg-slate-900 text-[12.5px] font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
                         disabled={createConfigAi.isPending}
                         onClick={() => {
                           createConfigAi.mutate({
@@ -653,6 +565,18 @@ export function MensajeriaPage() {
           }
         </aside>
       </div>
+
+      {aiModalOpen && configAi && (
+        <ConfiguracionAiModal
+          configAi={configAi}
+          leadNombre={
+            convActual?.lead
+              ? `${convActual.lead.nombres} ${convActual.lead.apellidos || ""}`.trim()
+              : ""
+          }
+          onClose={() => setAiModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -727,52 +651,6 @@ function SummaryRow({
       <span className="text-[12px] text-slate-500">{label}</span>
       {children ?? <span className="text-[12.5px] font-medium text-slate-900">{value}</span>}
     </li>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function ToggleSwitch({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className={cn("relative inline-flex cursor-pointer items-center", disabled && "cursor-not-allowed opacity-50")}>
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-        className="peer sr-only"
-      />
-      <span
-        className={cn(
-          "relative h-5 w-9 rounded-full transition-colors",
-          checked ? "bg-slate-900" : "bg-slate-300"
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-0.5 size-4 rounded-full bg-white shadow-sm transition-all",
-            checked ? "left-[18px]" : "left-0.5"
-          )}
-        />
-      </span>
-    </label>
   );
 }
 
