@@ -5,6 +5,6 @@ services:
       args:
         VITE_STRAPI_BASE_URL: ${VITE_STRAPI_BASE_URL}
         VITE_STRAPI_TOKEN: ${VITE_STRAPI_TOKEN}
-    expose:
-      - "4173"
+    ports:
+      - "4173:4173"
     restart: unless-stopped
