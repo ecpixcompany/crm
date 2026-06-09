@@ -21,8 +21,11 @@ import { faWhatsapp as faWhatsappBrand } from "@fortawesome/free-brands-svg-icon
 import { useConversaciones, useConversacion } from "../hooks/useConversaciones";
 import { useCreateMensaje, useMensajes } from "../hooks/useMensajes";
 import { useConfiguracionAiByLead, useCreateConfiguracionAi, useUpdateConfiguracionAi } from "../hooks/useConfiguracionAi";
+import { useSendWhatsapp } from "../hooks/useSendWhatsapp";
 import type { Lead } from "../lib/api";
 import { sendMessageViaN8N, MODELOS_AI } from "../lib/api";
+import { normalizePhone } from "@/lib/phone";
+import { toast } from "sonner";
 import { getInitials, getAvatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
@@ -46,6 +49,7 @@ export function MensajeriaPage() {
   const { data: configAi } = useConfiguracionAiByLead(convActual?.lead?.documentId);
   const createConfigAi = useCreateConfiguracionAi();
   const updateConfigAi = useUpdateConfiguracionAi();
+  const sendWhatsapp = useSendWhatsapp();
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const [newMessage, setNewMessage] = useState("");
@@ -83,11 +87,29 @@ export function MensajeriaPage() {
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedDocumentId || !convActual) return;
+    const texto = newMessage.trim();
+
+    if (convActual.canal === "whatsapp") {
+      const numero = normalizePhone(convActual.lead?.celular);
+      if (!numero) {
+        toast.error("Este lead no tiene celular registrado");
+        return;
+      }
+      setNewMessage("");
+      sendWhatsapp.mutate({
+        numero,
+        texto,
+        leadDocumentId: convActual.lead?.documentId,
+        conversacionDocumentId: selectedDocumentId,
+      });
+      return;
+    }
+
     const phone = convActual.lead?.celular || "";
     createMensaje.mutate(
       {
         conversacionDocumentId: selectedDocumentId,
-        contenido: newMessage.trim(),
+        contenido: texto,
         tipo: "salida",
         canal: convActual.canal,
         timestamp: new Date().toISOString(),
@@ -98,7 +120,7 @@ export function MensajeriaPage() {
           if (phone) {
             sendMessageViaN8N({
               phone,
-              message: newMessage.trim(),
+              message: texto,
               leadName:
                 convActual.lead ?
                   `${convActual.lead.nombres} ${convActual.lead.apellidos}`
@@ -429,9 +451,14 @@ export function MensajeriaPage() {
                   type="button"
                   className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-slate-900 px-5 text-[13px] font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleSendMessage}
-                  disabled={createMensaje.isPending || !newMessage.trim()}
+                  disabled={
+                    createMensaje.isPending || sendWhatsapp.isPending || !newMessage.trim()
+                  }
                 >
-                  <FontAwesomeIcon icon={faPaperPlane} className="size-3.5" />
+                  <FontAwesomeIcon
+                    icon={sendWhatsapp.isPending ? faSpinner : faPaperPlane}
+                    className={cn("size-3.5", sendWhatsapp.isPending && "animate-spin")}
+                  />
                   Enviar
                 </button>
               </div>
