@@ -23,6 +23,7 @@ import { useCreateMensaje, useMensajes } from "../hooks/useMensajes";
 import { useConfiguracionAiByLead, useCreateConfiguracionAi, useUpdateConfiguracionAi } from "../hooks/useConfiguracionAi";
 import type { Lead } from "../lib/api";
 import { sendMessageViaN8N, MODELOS_AI } from "../lib/api";
+import { getInitials, getAvatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
 export function MensajeriaPage() {
@@ -150,19 +151,6 @@ export function MensajeriaPage() {
       default:
         return faComment;
     }
-  };
-
-  const getInitials = (nombre: string) =>
-    nombre
-      .split(" ")
-      .map((n) => n.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
-  const getAvatarColor = (nombre: string) => {
-    const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
-    return colors[nombre.charCodeAt(0) % colors.length];
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

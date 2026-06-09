@@ -34,6 +34,7 @@ import {
   useDeleteActividad,
 } from "../../hooks/useActividades";
 import { cn } from "@/lib/utils";
+import { getAvatarColor } from "@/lib/avatar";
 
 interface LeadDetailModalProps {
   leadId: string;
@@ -185,11 +186,6 @@ export function LeadDetailModal({ leadId, onClose }: LeadDetailModalProps) {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const getAvatarColor = (nombre: string) => {
-    const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
-    return colors[nombre.charCodeAt(0) % colors.length];
   };
 
   const inputCls =

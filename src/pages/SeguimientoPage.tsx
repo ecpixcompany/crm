@@ -32,6 +32,7 @@ import { useAsesores } from '@/hooks/useAsesores';
 import { useActividades, useCreateActividad } from '@/hooks/useActividades';
 import { LeadDetailModal } from '@/components/modals/LeadDetailModal';
 import { cn } from '@/lib/utils';
+import { getInitials, getAvatarColor } from '@/lib/avatar';
 
 const STAGES = [
   { id: 'nuevo', label: 'Nuevo', tone: 'border-slate-300' },
@@ -77,13 +78,6 @@ const tipoTone = (tipo: Actividad['tipo']) => {
     case 'cambio_estado': return { bar: 'border-l-slate-700', icon: 'text-slate-700' };
     default: return { bar: 'border-l-slate-400', icon: 'text-slate-500' };
   }
-};
-
-const getInitials = (n: string, a: string) => `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
-
-const getAvatarColor = (nombre: string) => {
-  const colors = ['#0f172a', '#475569', '#0891b2', '#7c3aed', '#db2777'];
-  return colors[nombre.charCodeAt(0) % colors.length];
 };
 
 const getAsesorName = (asesor: Lead['asesor']) => {

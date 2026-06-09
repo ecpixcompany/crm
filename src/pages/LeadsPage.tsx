@@ -15,15 +15,8 @@ import { useLeads } from "@/hooks/useLeads";
 import { useAsesores } from "@/hooks/useAsesores";
 import { CreateLeadModal } from "@/components/modals/CreateLeadModal";
 import { LeadDetailModal } from "@/components/modals/LeadDetailModal";
+import { getInitials, getAvatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
-
-const getInitials = (n: string, a: string) =>
-  `${n.charAt(0)}${a.charAt(0)}`.toUpperCase();
-
-const getAvatarColor = (nombre: string) => {
-  const colors = ["#0f172a", "#475569", "#0891b2", "#7c3aed", "#db2777"];
-  return colors[nombre.charCodeAt(0) % colors.length];
-};
 
 const ESTADO_LABEL: Record<string, string> = {
   nuevo: "Nuevo",
