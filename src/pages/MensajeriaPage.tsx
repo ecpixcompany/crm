@@ -9,8 +9,6 @@ import {
   faStopwatch,
   faUserCheck,
   faSearch,
-  faPhone,
-  faEllipsisV,
   faSpinner,
   faCommentDots,
   faPaperclip,
@@ -371,18 +369,6 @@ export function MensajeriaPage() {
                     <FontAwesomeIcon icon={getCanalIcon(convActual.canal)} className="text-[10px]" />
                     {convActual.canal}
                   </span>
-                  <button
-                    type="button"
-                    className="flex size-9 cursor-pointer items-center justify-center rounded-md border-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                  >
-                    <FontAwesomeIcon icon={faPhone} className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="flex size-9 cursor-pointer items-center justify-center rounded-md border-none text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                  >
-                    <FontAwesomeIcon icon={faEllipsisV} className="size-3.5" />
-                  </button>
                 </div>
               </div>
 

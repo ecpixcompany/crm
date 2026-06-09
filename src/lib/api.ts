@@ -196,7 +196,7 @@ export async function fetchLeads(): Promise<Lead[]> {
 }
 
 export async function fetchLead(documentId: string): Promise<Lead> {
-  const url = `${getStrapiUrl('leads', documentId)}?populate[asesor]=true&populate[conversaciones]=true&populate[actividades]=true`;
+  const url = `${getStrapiUrl('leads', documentId)}?populate[asesor]=true&populate[conversacions]=true&populate[actividads]=true`;
   const res = await strapiFetch<StrapiResponse<Lead>>(url);
   if (!res.data) throw new Error('Lead no encontrado');
   return flatten(res.data);
