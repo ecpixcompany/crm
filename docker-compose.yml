@@ -7,6 +7,6 @@ services:
         VITE_STRAPI_TOKEN: ${VITE_STRAPI_TOKEN}
         VITE_N8N_WSP_WEBHOOK: ${VITE_N8N_WSP_WEBHOOK}
         VITE_N8N_WSP_TIMEOUT_MS: ${VITE_N8N_WSP_TIMEOUT_MS}
-    ports:
-      - "4173:4173"
+    expose:
+      - "4173"
     restart: unless-stopped
