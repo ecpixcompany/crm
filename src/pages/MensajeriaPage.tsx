@@ -20,6 +20,7 @@ import { useConversaciones, useConversacion } from "../hooks/useConversaciones";
 import { useCreateMensaje, useMensajes } from "../hooks/useMensajes";
 import { useConfiguracionAiByLead, useCreateConfiguracionAi, useUpdateConfiguracionAi } from "../hooks/useConfiguracionAi";
 import { useSendWhatsapp } from "../hooks/useSendWhatsapp";
+import { useIsTabVisible } from "../hooks/useIsTabVisible";
 import type { Lead } from "../lib/api";
 import { sendMessageViaN8N, MODELOS_AI } from "../lib/api";
 import { normalizePhone } from "@/lib/phone";
@@ -34,14 +35,18 @@ export function MensajeriaPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tabFilter, setTabFilter] = useState("todos");
 
-  const { data: conversaciones = [], isLoading } = useConversaciones(10000);
+  const tabVisible = useIsTabVisible();
+  const convPollMs = 3000;
+  const msgsPollMs = 3000;
+
+  const { data: conversaciones = [], isLoading } = useConversaciones(tabVisible ? 10000 : false);
   const { data: convActual } = useConversacion(
     selectedDocumentId ?? undefined,
-    selectedDocumentId ? 500 : false,
+    selectedDocumentId && tabVisible ? convPollMs : false,
   );
   const { data: mensajes = [], isLoading: mensajesLoading } = useMensajes(
     selectedDocumentId ?? undefined,
-    selectedDocumentId ? 500 : false,
+    selectedDocumentId && tabVisible ? msgsPollMs : false,
   );
   const createMensaje = useCreateMensaje();
   const { data: configAi } = useConfiguracionAiByLead(convActual?.lead?.documentId);
@@ -52,9 +57,21 @@ export function MensajeriaPage() {
 
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const threshold = 80;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom <= threshold;
+  };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (stickToBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [mensajes]);
 
   const activeConversations = conversaciones.filter((c) => {
@@ -64,12 +81,20 @@ export function MensajeriaPage() {
   const pendingCount = conversaciones.filter((c) => c.sin_respuesta).length;
 
   const filteredConversaciones = conversaciones.filter((conv) => {
-    const nombreLead =
-      conv.lead ? `${conv.lead.nombres} ${conv.lead.apellidos}` : "Sin lead";
-    const matchesSearch =
-      searchTerm === "" ||
-      nombreLead.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (conv.ultimo_mensaje || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const lead = conv.lead;
+    const nombreLead = lead ? `${lead.nombres} ${lead.apellidos}` : "Sin lead";
+    const term = searchTerm.toLowerCase();
+    const searchable = [
+      nombreLead,
+      lead?.apellidos ?? "",
+      lead?.celular ?? "",
+      lead?.programa ?? "",
+      lead?.ciudad ?? "",
+      conv.ultimo_mensaje ?? "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    const matchesSearch = term === "" || searchable.includes(term);
 
     let matchesTab = true;
     if (tabFilter === "nuevos") {
@@ -219,8 +244,8 @@ export function MensajeriaPage() {
         />
       </div>
 
-      <div className="grid min-h-[560px] grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)_300px]">
-        <section className="flex flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+      <div className="grid h-[calc(100dvh-360px)] min-h-[560px] grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)_300px]">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
           <div className="border-b border-slate-200/70 p-5">
             <h3 className="text-[14px] font-semibold tracking-tight text-slate-900">
               <FontAwesomeIcon
@@ -332,7 +357,7 @@ export function MensajeriaPage() {
           </div>
         </section>
 
-        <section className="flex flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
           {selectedDocumentId && convActual ?
             <>
               <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-4">
@@ -372,7 +397,11 @@ export function MensajeriaPage() {
                 </div>
               </div>
 
-              <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-slate-50/40 p-6">
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleMessagesScroll}
+                className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto bg-slate-50/40 p-6"
+              >
                 {mensajesLoading ?
                   <div className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-500">
                     <FontAwesomeIcon icon={faSpinner} spin className="size-5" />
@@ -456,7 +485,7 @@ export function MensajeriaPage() {
           }
         </section>
 
-        <aside className="flex flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
+        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42_/_0.04)]">
           {selectedDocumentId && convActual ?
             <>
               <SummaryCard title="Resumen del lead">

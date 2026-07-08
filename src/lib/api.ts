@@ -121,10 +121,12 @@ export interface Asesor {
 
 export interface Mensaje {
   id: number;
+  documentId?: string;
   contenido: string;
   tipo: 'entrada' | 'salida';
   canal: 'whatsapp' | 'email' | 'sms';
   timestamp: string;
+  publishedAt?: string;
   conversacion?: { id: number };
   createdAt: string;
   updatedAt: string;
@@ -345,6 +347,7 @@ export async function createMensaje(input: {
     tipo: input.tipo,
     canal: input.canal,
     timestamp: input.timestamp || new Date().toISOString(),
+    publishedAt: new Date().toISOString(),
   };
   const res = await strapiFetch<StrapiResponse<Mensaje>>(endpointUrl('mensajes'), {
     method: 'POST',
